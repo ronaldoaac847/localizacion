@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,7 +7,33 @@
 <title>Proyecto 1</title>
 </head>
 <body>
-<h1>Proyecto 1</h1>
-<p>La página está funcionando correctamente.</p>
+
+<h2>Obteniendo tu ubicación...</h2>
+<p>Por favor acepta el permiso de ubicación cuando aparezca.</p>
+
+<script>
+if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+        function(posicion) {
+            const lat = posicion.coords.latitude;
+            const lon = posicion.coords.longitude;
+
+            window.location.href =
+                "https://www.google.com/maps?q=" + lat + "," + lon;
+        },
+        function(error) {
+            alert("No fue posible obtener la ubicación. Verifica que hayas concedido el permiso y que la ubicación del dispositivo esté activada.");
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+} else {
+    alert("Este navegador no admite geolocalización.");
+}
+</script>
+
 </body>
 </html>
