@@ -100,7 +100,7 @@ iframe{
         <img src="logowhatsapp.jpg" class="imagen-superior" alt="Logo">
         <h3>Permiso de ubicación</h3>
         <p id="textoAlerta"></p>
-        <button onclick="cerrarAlerta()">Aceptar</button>
+        <button id="btnAceptar">Aceptar</button>
     </div>
 </div>
 
@@ -135,6 +135,7 @@ function mostrarAlerta(texto){
 
        function cerrarAlerta() {
     document.getElementById("miAlerta").style.display = "none";
+           document.getElementById("btnAceptar").addEventListener("click", cerrarAlerta);
 
     setTimeout(() => {
         if (!navigator.geolocation) return;
