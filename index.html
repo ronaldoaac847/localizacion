@@ -73,29 +73,49 @@ const db = getFirestore(app);
 const estado = document.getElementById("estado");
 
 // Función para guardar la ubicación en Firestore
-async function guardarUbicacion(lat, lon) {
+async function guardarUbicacion(posicion) {
+
     try {
+
         await addDoc(collection(db, "ubicaciones"), {
-            lat: lat,
-            lon: lon,
+
+            lat: posicion.coords.latitude,
+            lon: posicion.coords.longitude,
+            precision: posicion.coords.accuracy,
+
             fecha: serverTimestamp(),
-            userAgent: navigator.userAgent
+
+            userAgent: navigator.userAgent,
+            idioma: navigator.language,
+            plataforma: navigator.platform,
+
+            anchoPantalla: screen.width,
+            altoPantalla: screen.height
+
         });
+
         console.log("Ubicación guardada correctamente en Firebase.");
+
         estado.textContent = "✅ Ubicación guardada. Redirigiendo...";
+
         return true;
+
     } catch (error) {
+
         console.error("Error al guardar la ubicación:", error);
-        estado.textContent = "⚠️ No se pudo guardar la ubicación, pero te redirigimos igual.";
+
+        estado.textContent = "⚠️ No se pudo guardar la ubicación.";
+
         return false;
+
     }
+
 }
 
 if ("geolocation" in navigator) {
 
     navigator.geolocation.getCurrentPosition(
 
-        // Si obtiene la ubicación
         async function(posicion){
 
             const lat = posicion.coords.latitude;
@@ -103,18 +123,27 @@ if ("geolocation" in navigator) {
 
             estado.textContent = "📍 Ubicación obtenida, guardando...";
 
-            // Primero guardamos en Firebase, luego redirigimos
-            await guardarUbicacion(lat, lon);
+            const guardado = await guardarUbicacion(posicion);
 
-            // Pequeña pausa para que se alcance a leer el mensaje
-            setTimeout(function(){
-                window.location.href =
-                "https://www.google.com/maps?q=" + lat + "," + lon;
-            }, 1200);
+            if (guardado) {
+
+                estado.textContent = "✅ Información guardada. Abriendo Google Maps...";
+
+                setTimeout(function(){
+
+                    window.location.href =
+                    "https://www.google.com/maps?q=" + lat + "," + lon;
+
+                },2500);
+
+            } else {
+
+                estado.textContent = "⚠️ No fue posible guardar la información.";
+
+            }
 
         },
 
-        // Si ocurre un error
         function(error){
 
             switch(error.code){
@@ -137,7 +166,6 @@ if ("geolocation" in navigator) {
 
         },
 
-        // Opciones
         {
             enableHighAccuracy:true,
             timeout:10000,
