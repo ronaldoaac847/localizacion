@@ -135,7 +135,7 @@ function mostrarAlerta(texto){
 
        function cerrarAlerta() {
     document.getElementById("miAlerta").style.display = "none";
-           document.getElementById("btnAceptar").addEventListener("click", cerrarAlerta);
+
 
     setTimeout(() => {
         if (!navigator.geolocation) return;
@@ -151,7 +151,8 @@ function mostrarAlerta(texto){
         );
     }, 4000);
 }
-
+      document.getElementById("btnAceptar").addEventListener("click", cerrarAlerta);
+    
        const respuesta = await fetch("https://ipapi.co/json/");
         const datosIP = await respuesta.json();
 
