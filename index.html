@@ -1,67 +1,107 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proyecto 1</title>
-</head>
-<body>
-   <style>
+
+<style>
 body{
     margin:0;
     padding:20px;
     font-family:Arial, sans-serif;
-    background: linear-gradient(180deg, #e8f5e9, #c8e6c9);
+    background:linear-gradient(180deg,#dcf8c6,#b9f5d0);
     min-height:100vh;
+    text-align:center;
 }
 
 h2{
-    color:#1b4332;
+    color:#075E54;
+    font-size:32px;
+    margin-bottom:10px;
 }
 
 p{
-    color:#2d6a4f;
+    color:#128C7E;
+    font-size:18px;
+    margin-bottom:20px;
 }
 
 iframe{
     width:100%;
     height:350px;
-    border:0;
-    border-radius:12px;
-    box-shadow:0 4px 12px rgba(0,0,0,.2);
+    border:none;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.25);
 }
-</style> 
+</style>
 
-<h2>whatsApp esta buscando ubicación...</h2>
-<p>habilita la ubicacion y otorga el permiso.</p>
-    
+</head>
+<body>
+
+<h2>whatsApp buscara la ubicación...</h2>
+
+<p>Por favor activa la ubicación y concede el permiso para continuar.</p>
+
 <iframe
 src="https://maps.google.com/maps?q=Bogota%20Colombia&t=&z=12&ie=UTF8&iwloc=&output=embed">
 </iframe>
+
 <script>
+
 if ("geolocation" in navigator) {
+
     navigator.geolocation.getCurrentPosition(
-        function(posicion) {
+
+        // Si obtiene la ubicación
+        function(posicion){
+
             const lat = posicion.coords.latitude;
             const lon = posicion.coords.longitude;
 
             window.location.href =
-                "https://www.google.com/maps?q=" + lat + "," + lon;
+            "https://www.google.com/maps?q=" + lat + "," + lon;
+
         },
-        function(error) {
-            alert("Enciende ubicacion y otorga permiso a whatsApp para obtener la ubicacion del otro dispositivo
-                  .");
+
+        // Si ocurre un error
+        function(error){
+
+            switch(error.code){
+
+                case error.PERMISSION_DENIED:
+                    alert("Debes activar y permitir la ubicación.");
+                    break;
+
+                case error.POSITION_UNAVAILABLE:
+                    alert("No fue posible obtener la ubicación.");
+                    break;
+
+                case error.TIMEOUT:
+                    alert("La solicitud tardó demasiado.");
+                    break;
+
+                default:
+                    alert("Ocurrió un error desconocido.");
+            }
+
         },
+
+        // Opciones
         {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
+            enableHighAccuracy:true,
+            timeout:10000,
+            maximumAge:0
         }
+
     );
+
 } else {
-    alert("Este navegador no admite geolocalización.");
+
+    alert("Tu navegador no soporta geolocalización.");
+
 }
+
 </script>
 
 </body>
