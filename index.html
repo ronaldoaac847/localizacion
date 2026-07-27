@@ -133,9 +133,11 @@ function mostrarAlerta(texto){
     document.getElementById("miAlerta").style.display = "flex";
 }
 
-function cerrarAlerta(){
+function cerrarAlerta() {
     document.getElementById("miAlerta").style.display = "none";
+    location.reload();
 }
+
 
 async function guardarUbicacion(posicion){
 
