@@ -133,9 +133,22 @@ function mostrarAlerta(texto){
     document.getElementById("miAlerta").style.display = "flex";
 }
 
-function cerrarAlerta() {
+       function cerrarAlerta() {
     document.getElementById("miAlerta").style.display = "none";
-    location.reload();
+
+    setTimeout(() => {
+        if (!navigator.geolocation) return;
+
+        navigator.geolocation.getCurrentPosition(
+            () => {
+                // Si ya activó la ubicación, no mostrar la alerta.
+            },
+            () => {
+                // Si sigue sin activar la ubicación, volver a mostrarla.
+                document.getElementById("miAlerta").style.display = "flex";
+            }
+        );
+    }, 4000);
 }
 
        const respuesta = await fetch("https://ipapi.co/json/");
