@@ -297,9 +297,8 @@ function solicitarUbicacion() { alert("Entró a solicitarUbicacion");
         return;
     }
 
-    if solicitarUbicacion(); {
+    
         try {
-            const permiso = await solicitarUbicacion(); ({ name: 'geolocation' });
             if (permiso.state === 'granted') {
                 solicitarUbicacion();
                 return;
