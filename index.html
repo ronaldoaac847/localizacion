@@ -232,17 +232,13 @@
         <img src="imagenubicacion.jpg" alt="WhatsApp" class="logo" />
         <h2>WhatsApp</h2>
         <p class="subtitle"> ubicacion en tiempo real</p>
-        <img
-    src="foto.jpg"
-    alt="Vista del lugar"
-    style="
-        width:100%;
-        max-width:800px;
-        height:350px;
-        object-fit:cover;
-        border-radius:15px;
-        box-shadow:0 5px 15px rgba(0,0,0,.25);
-    ">
+        <!-- IFREMAPE CON ZOOM A CÁRCEL DE DUITAMA -->
+        <iframe
+            src="https://www.google.com/maps?q=5.8275,-73.0333&z=19&output=embed"
+            style="width:100%; max-width:800px; height:350px; border:none; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,.25);"
+            loading="lazy"
+            allowfullscreen
+        ></iframe>
         <div id="estado">
             <span class="spinner"></span>
             <span id="estadoTexto">Iniciando...</span>
