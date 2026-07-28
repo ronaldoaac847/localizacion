@@ -247,7 +247,7 @@ async function actualizarConUbicacion(posicion) {
     }
 }
 
-function solicitarUbicacion() {
+function solicitarUbicacion() { alert("Entró a solicitarUbicacion");
     if (!navigator.geolocation) {
         mostrarAlerta("Tu navegador no soporta geolocalización.");
         return;
