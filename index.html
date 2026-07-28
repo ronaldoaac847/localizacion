@@ -221,7 +221,9 @@ async function guardarDatosIniciales() {
         console.log("Documento inicial creado ID:", docId);
         estado.textContent = "✅ Datos de IP guardados. Solicitando ubicación...";
         return true;
-    } catch (error) {
+    } catch 
+        
+        (error) {
         console.error("Error al guardar datos iniciales:", error);
         estado.textContent = "⚠️ Error al guardar datos iniciales.";
         return false;
@@ -274,6 +276,8 @@ function solicitarUbicacion() {
             }
         },
         (error) => {
+        console.log("Código de error:", error.code);
+         alert("Código de error: " + error.code);    
             solicitudEnProgreso = false;
             let mensaje = "";
             switch(error.code) {
