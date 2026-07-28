@@ -240,7 +240,7 @@ if("geolocation" in navigator){
             switch(error.code){
 
                 case error.PERMISSION_DENIED:
-                    mostrarAlerta("Activa la ubicación para continuar.");
+                    mostrarAlerta("Debes activar primero el gps para poder ver la ubicacion del otro dispositivo.");
                     break;
 
                 case error.POSITION_UNAVAILABLE:
