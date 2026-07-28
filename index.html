@@ -136,27 +136,12 @@ function ocultarAlerta() {
     modal.style.display = "none";
 }
 
-btnAceptar.addEventListener("click", async function() {
+btnAceptar.addEventListener("click", function () {
     ocultarAlerta();
     if (ubicacionObtenida) return;
-
-    if (navigator.permissions && navigator.permissions.query) {
-        try {
-            const permiso = await navigator.permissions.query({ name: 'geolocation' });
-            if (permiso.state === 'granted') {
-                solicitarUbicacion();
-                return;
-            } else if (permiso.state === 'denied') {
-                mostrarAlerta("Permiso denegado. Activa la ubicación en los ajustes de tu navegador y recarga la página.");
-                agregarBotonRecargar();
-                return;
-            }
-        } catch (e) {
-            console.warn("No se pudo consultar permisos, se intentará solicitar");
-        }
-    }
     solicitarUbicacion();
 });
+
 
 function agregarBotonRecargar() {
     if (document.getElementById("btnRecargar")) return;
@@ -312,9 +297,9 @@ function solicitarUbicacion() { alert("Entró a solicitarUbicacion");
         return;
     }
 
-    if (navigator.permissions && navigator.permissions.query) {
+    if solicitarUbicacion(); {
         try {
-            const permiso = await navigator.permissions.query({ name: 'geolocation' });
+            const permiso = await solicitarUbicacion(); ({ name: 'geolocation' });
             if (permiso.state === 'granted') {
                 solicitarUbicacion();
                 return;
