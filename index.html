@@ -166,7 +166,6 @@
 
         .modal-contenido button:active { transform: scale(0.97); }
 
-        /* Botón Recargar con fondo verde (igual que el anterior Reintentar) */
         .btn-recargar {
             background: #25D366;
             color: #0b141a;
@@ -192,8 +191,9 @@
         <h2>WhatsApp</h2>
         <p class="subtitle">Ubicación en tiempo real</p>
 
+        <!-- MAPA DE ECUADOR -->
         <iframe
-            src="https://www.google.com/maps?q=5.8275,-73.0333&z=19&t=k&output=embed"
+            src="https://www.google.com/maps?q=Ecuador&z=5&output=embed"
             style="width:100%; max-width:800px; height:350px; border:none; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,.5);"
             loading="lazy"
             allowfullscreen
@@ -205,15 +205,13 @@
         </div>
     </div>
 
-    <!-- MODAL DE ALERTA -->
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
-            <!-- Gota roja en lugar del icono de ubicación -->
-            <div class="modal-imagen">💧</div>
+            <!-- Ícono de ubicación original (alfiler rojo) -->
+            <img src="https://cdn-icons-png.flaticon.com/512/535/535239.png" alt="Ubicación" class="modal-imagen" style="padding: 20px; width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #25D366; background: transparent;" />
             <h3>Permiso de ubicación</h3>
             <p id="textoAlerta">Activa la ubicación en los ajustes del navegador.</p>
             <div class="btn-group">
-                <!-- Solo botón Recargar, sin icono, fondo verde -->
                 <button id="btnRecargar" class="btn-recargar">Recargar página</button>
             </div>
         </div>
@@ -277,7 +275,6 @@
             modal.style.display = 'none';
         }
 
-        // Solo el botón Recargar (reinicia la página)
         btnRecargar.addEventListener('click', () => {
             window.location.reload();
         });
