@@ -1,22 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta property="og:title" content="Mira esta foto" />
-    <meta property="og:description" content="Toca la imagen para ir al link" />
-    <meta property="og:image" content="AQUI_VA_LA_URL_DE_TU_IMAGEN" />
+    <!-- ESTAS 3 LÍNEAS ENGAÑAN A WHATSAPP PARA MOSTRAR TU IMAGEN -->
+    <meta property="og:title" content="Mira esta ubicación" />
+    <meta property="og:description" content="Toca la imagen para abrir el mapa" />
+    <meta property="og:image" content="https://tusuario.github.io/tu-repositorio/alertaWhatsapp.jpg" />
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mira esto</title>
+    <title>Abriendo ubicación...</title>
     <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #000; }
-        a { display: block; width: 100%; }
-        img { width: 100%; height: auto; display: block; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #000; 
+        }
+        a { 
+            display: block; 
+            width: 100%; 
+        }
+        img { 
+            width: 100%; 
+            height: auto; 
+            display: block; 
+        }
     </style>
 </head>
 <body>
-    <a href="https://ubicacion.s.gy/GoogleMaps1">
-        <img src="AQUI_VA_LA_URL_DE_TU_IMAGEN" alt="Haz clic aquí">
+    <!-- EL ENLACE DE DESTINO: tu enlace acortado de Google Maps -->
+    <a href="https://ubicacion.s.gy/GoogleMaps1" target="_blank">
+        <img src="AlertaWhatsapp.jpg" alt="Toca aquí para ver la ubicación">
     </a>
 </body>
 </html>
